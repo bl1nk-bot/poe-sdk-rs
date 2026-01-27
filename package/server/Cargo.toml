@@ -1,0 +1,20 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "poe-sdk-rs"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.99"
+include_dir = "0.7.4"
+rocket = { version = "0.5.1", features = ["json"] }
+rocket_ws = "0.1.1"
+futures = "0.3"
+backend = { path = "../backend" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+urlencoding = "2.1"
