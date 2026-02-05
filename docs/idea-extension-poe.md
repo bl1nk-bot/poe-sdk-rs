@@ -1,281 +1,349 @@
-# Getting started with Gemini CLI extensions
+# poe_bot_rust_extension
 
-This guide will walk you through creating your first Gemini CLI extension.
-You'll learn how to set up a new extension, add a custom tool via an MCP server,
-create a custom command, and provide context to the model with a `GEMINI.md`
-file.
+````artifact
+id: poe_bot_rust_extension
+name: Poe Bot Rust Extension for Gemini CLI
+type: code.rust
+content: |-
+  // Cargo.toml dependencies:
+  // [dependencies]
+  // tokio = { version = "1", features = ["full"] }
+  // serde = { version = "1.0", features = ["derive"] }
+  // serde_json = "1.0"
+  // async-trait = "0.1"
+  // thiserror = "1.0"
 
-## Prerequisites
+  use serde::{Deserialize, Serialize};
+  use std::fs;
+  use std::path::PathBuf;
+  use std::process::Command;
+  use thiserror::Error;
+  use tokio::fs::File;
+  use tokio::io::AsyncWriteExt;
 
-Before you start, make sure you have the Gemini CLI installed and a basic
-understanding of Node.js.
+  #[derive(Error, Debug)]
+  pub enum PoeExtensionError {
+      #[error("IO error: {0}")]
+      IoError(#[from] std::io::Error),
+      #[error("JSON error: {0}")]
+      JsonError(#[from] serde_json::Error),
+      #[error("Script execution failed: {0}")]
+      ExecutionError(String),
+      #[error("Invalid configuration: {0}")]
+      ConfigError(String),
+  }
 
-## When to use what
+  #[derive(Debug, Serialize, Deserialize, Clone)]
+  pub struct PoeConfig {
+      pub bot_name: String,
+      pub api_key: Option<String>,
+      pub version: String,
+      pub description: String,
+  }
 
-Extensions offer a variety of ways to customize Gemini CLI.
+  #[derive(Debug, Serialize, Deserialize)]
+  pub struct PoeToolInput {
+      pub action: String,
+      pub bot_name: Option<String>,
+      pub script_path: Option<String>,
+      pub config: Option<PoeConfig>,
+  }
 
-| Feature                                                        | What it is                                                                                                         | When to use it                                                                                                                                                                                                                                                                                 | Invoked by            |
-| :------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------- |
-| **[MCP server](/docs/extensions/reference#mcp-servers)**                     | A standard way to expose new tools and data sources to the model.                                                  | Use this when you want the model to be able to _do_ new things, like fetching data from an internal API, querying a database, or controlling a local application. We also support MCP resources (which can replace custom commands) and system instructions (which can replace custom context) | Model                 |
-| **[Custom commands](/docs/cli/custom-commands)**               | A shortcut (like `/my-cmd`) that executes a pre-defined prompt or shell command.                                   | Use this for repetitive tasks or to save long, complex prompts that you use frequently. Great for automation.                                                                                                                                                                                  | User                  |
-| **[Context file (`GEMINI.md`)](/docs/extensions/reference#contextfilename)** | A markdown file containing instructions that are loaded into the model's context at the start of every session.    | Use this to define the "personality" of your extension, set coding standards, or provide essential knowledge that the model should always have.                                                                                                                                                | CLI provides to model |
-| **[Agent skills](/docs/cli/skills)**                           | A specialized set of instructions and workflows that the model activates only when needed.                         | Use this for complex, occasional tasks (like "create a PR" or "audit security") to avoid cluttering the main context window when the skill isn't being used.                                                                                                                                   | Model                 |
-| **[Hooks](/docs/hooks)**                                 | A way to intercept and customize the CLI's behavior at specific lifecycle events (e.g., before/after a tool call). | Use this when you want to automate actions based on what the model is doing, like validating tool arguments, logging activity, or modifying the model's input/output.                                                                                                                          | CLI                   |
+  #[derive(Debug, Serialize, Deserialize)]
+  pub struct PoeToolOutput {
+      pub success: bool,
+      pub message: String,
+      pub script_path: Option<String>,
+      pub output: Option<String>,
+  }
 
-## Step 1: Create a new extension
+  /// Poe Bot Extension Manager
+  pub struct PoeExtension {
+      extension_path: PathBuf,
+      scripts_dir: PathBuf,
+  }
 
-The easiest way to start is by using one of the built-in templates. We'll use
-the `mcp-server` example as our foundation.
+  impl PoeExtension {
+      pub fn new(extension_path: PathBuf) -> Self {
+          let scripts_dir = extension_path.join("poe_scripts");
+          Self {
+              extension_path,
+              scripts_dir,
+          }
+      }
 
-Run the following command to create a new directory called `my-first-extension`
-with the template files:
+      /// สร้าง Poe bot script ใหม่
+      pub async fn create_bot_script(
+          &self,
+          config: &PoeConfig,
+      ) -> Result<PoeToolOutput, PoeExtensionError> {
+          // สร้างโฟลเดอร์ scripts ถ้ายังไม่มี
+          tokio::fs::create_dir_all(&self.scripts_dir).await?;
+
+          let script_path = self.scripts_dir.join(format!("{}.py", config.bot_name));
+
+          // สร้างเนื้อหา Poe bot script
+          let script_content = self.generate_poe_script(config);
+
+          // เขียนไฟล์ script
+          let mut file = File::create(&script_path).await?;
+          file.write_all(script_content.as_bytes()).await?;
+          file.sync_all().await?;
+
+          Ok(PoeToolOutput {
+              success: true,
+              message: format!("Poe bot script created successfully: {}", config.bot_name),
+              script_path: Some(script_path.to_string_lossy().to_string()),
+              output: None,
+          })
+      }
+
+      /// เรียกใช้ Poe bot script
+      pub async fn run_bot_script(
+          &self,
+          bot_name: &str,
+      ) -> Result<PoeToolOutput, PoeExtensionError> {
+          let script_path = self.scripts_dir.join(format!("{}.py", bot_name));
+
+          if !script_path.exists() {
+              return Err(PoeExtensionError::ExecutionError(format!(
+                  "Script not found: {}",
+                  bot_name
+              )));
+          }
+
+          // เรียกใช้ Python script
+          let output = Command::new("python3")
+              .arg(&script_path)
+              .current_dir(&self.scripts_dir)
+              .output()
+              .map_err(|e| PoeExtensionError::ExecutionError(e.to_string()))?;
+
+          let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+          let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+
+          if !output.status.success() {
+              return Err(PoeExtensionError::ExecutionError(format!(
+                  "Script execution failed: {}",
+                  stderr
+              )));
+          }
+
+          Ok(PoeToolOutput {
+              success: true,
+              message: format!("Poe bot script executed successfully: {}", bot_name),
+              script_path: Some(script_path.to_string_lossy().to_string()),
+              output: Some(stdout),
+          })
+      }
+
+      /// ลบ Poe bot script
+      pub async fn delete_bot_script(
+          &self,
+          bot_name: &str,
+      ) -> Result<PoeToolOutput, PoeExtensionError> {
+          let script_path = self.scripts_dir.join(format!("{}.py", bot_name));
+
+          if !script_path.exists() {
+              return Err(PoeExtensionError::ExecutionError(format!(
+                  "Script not found: {}",
+                  bot_name
+              )));
+          }
+
+          tokio::fs::remove_file(&script_path).await?;
+
+          Ok(PoeToolOutput {
+              success: true,
+              message: format!("Poe bot script deleted: {}", bot_name),
+              script_path: None,
+              output: None,
+          })
+      }
+
+      /// แสดงรายการ Poe bot scripts
+      pub async fn list_bot_scripts(&self) -> Result<PoeToolOutput, PoeExtensionError> {
+          if !self.scripts_dir.exists() {
+              return Ok(PoeToolOutput {
+                  success: true,
+                  message: "No scripts found".to_string(),
+                  script_path: None,
+                  output: Some("[]".to_string()),
+              });
+          }
+
+          let mut scripts = Vec::new();
+          let mut entries = tokio::fs::read_dir(&self.scripts_dir).await?;
+
+          while let Some(entry) = entries.next_entry().await? {
+              let path = entry.path();
+              if path.extension().and_then(|s| s.to_str()) == Some("py") {
+                  if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
+                      scripts.push(name.to_string());
+                  }
+              }
+          }
+
+          let output = serde_json::to_string(&scripts)?;
+
+          Ok(PoeToolOutput {
+              success: true,
+              message: format!("Found {} Poe bot scripts", scripts.len()),
+              script_path: None,
+              output: Some(output),
+          })
+      }
+
+      /// สร้างเนื้อหา Poe bot script template
+      fn generate_poe_script(&self, config: &PoeConfig) -> String {
+          format!(
+              r#"""
+from poe_api_wrapper import PoeApi
+
+class {}Bot:
+    """
+    Poe Bot: {}
+    Version: {}
+    Description: {}
+    """
+    
+    def __init__(self):
+        self.name = "{}"
+        self.version = "{}"
+        self.description = "{}"
+        {}
+    
+    def initialize(self):
+        """Initialize the bot"""
+        print(f"Initializing {{self.name}} bot...")
+        return True
+    
+    def handle_message(self, message: str) -> str:
+        """
+        Handle incoming message
+        
+        Args:
+            message: User message
+            
+        Returns:
+            Bot response
+        """
+        print(f"Received message: {{message}}")
+        # Add your bot logic here
+        return f"Response from {{self.name}}: {{message}}"
+    
+    def run(self):
+        """Run the bot"""
+        if self.initialize():
+            print(f"{{self.name}} bot is running...")
+            # Add your bot execution logic here
+            return True
+        return False
+
+if __name__ == "__main__":
+    bot = {}Bot()
+    bot.run()
+"""#,
+              config.bot_name,
+              config.bot_name,
+              config.version,
+              config.description,
+              config.bot_name,
+              config.version,
+              config.description,
+              if config.api_key.is_some() {
+                  'self.api_key = "***"'.to_string()
+              } else {
+                  "self.api_key = None".to_string()
+              },
+              config.bot_name,
+          )
+      }
+  }
+
+  #[tokio::main]
+  async fn main() -> Result<(), Box<dyn std::error::Error>> {
+      let extension = PoeExtension::new(PathBuf::from("."));
+
+      // ตัวอย่าง: สร้าง Poe bot script
+      let config = PoeConfig {
+          bot_name: "my_poe_bot".to_string(),
+          api_key: Some("your-api-key".to_string()),
+          version: "1.0.0".to_string(),
+          description: "A custom Poe bot created by Rust extension".to_string(),
+      };
+
+      match extension.create_bot_script(&config).await {
+          Ok(output) => {
+              println!("✓ {}", output.message);
+              if let Some(path) = output.script_path {
+                  println!("  Script path: {}", path);
+              }
+          }
+          Err(e) => eprintln!("✗ Error: {}", e),
+      }
+
+      // ตัวอย่าง: เรียกใช้ script
+      match extension.run_bot_script("my_poe_bot").await {
+          Ok(output) => {
+              println!("✓ {}", output.message);
+              if let Some(out) = output.output {
+                  println!("  Output: {}", out);
+              }
+          }
+          Err(e) => eprintln!("✗ Error: {}", e),
+      }
+
+      // ตัวอย่าง: แสดงรายการ scripts
+      match extension.list_bot_scripts().await {
+          Ok(output) => {
+              println!("✓ {}", output.message);
+              if let Some(scripts) = output.output {
+                  println!("  Scripts: {}", scripts);
+              }
+          }
+          Err(e) => eprintln!("✗ Error: {}", e),
+      }
+
+      Ok(())
+  }
+````
+
+## คำอธิบาย
+
+ฉันได้สร้าง **Rust Extension** สำหรับ Gemini CLI ที่มีฟีเจอร์หลักดังนี้:
+
+### 🎯 ฟีเจอร์หลัก
+
+1. **`create_bot_script()`** - สร้าง Poe bot script ใหม่
+   - รับ configuration ของ bot
+   - สร้างไฟล์ Python script โดยอัตโนมัติ
+   - ใช้ poepython API wrapper
+
+2. **`run_bot_script()`** - เรียกใช้ Poe bot script
+   - ค้นหา script ตามชื่อ
+   - เรียกใช้ผ่าน Python3
+   - จับ output และ error
+
+3. **`delete_bot_script()`** - ลบ Poe bot script
+   - ลบไฟล์ script ที่ไม่ต้องการ
+
+4. **`list_bot_scripts()`** - แสดงรายการ scripts ทั้งหมด
+   - ค้นหาไฟล์ `.py` ทั้งหมด
+   - คืนค่าเป็น JSON
+
+### 📦 โครงสร้าง
+
+- **Error Handling**: ใช้ `thiserror` สำหรับจัดการ error
+- **Async/Await**: ใช้ `tokio` สำหรับ async operations
+- **Type Safety**: ใช้ Rust's type system สำหรับความปลอดภัย
+- **Serialization**: ใช้ `serde` สำหรับ JSON handling
+
+### 🚀 การใช้งาน
 
 ```bash
-gemini extensions new my-first-extension mcp-server
+cargo build --release
+./target/release/poe_extension
 ```
 
-This will create a new directory with the following structure:
-
-```
-my-first-extension/
-├── example.js
-├── gemini-extension.json
-└── package.json
-```
-
-## Step 2: Understand the extension files
-
-Let's look at the key files in your new extension.
-
-### `gemini-extension.json`
-
-This is the manifest file for your extension. It tells Gemini CLI how to load
-and use your extension.
-
-```json
-{
-  "name": "mcp-server-example",
-  "version": "1.0.0",
-  "mcpServers": {
-    "nodeServer": {
-      "command": "node",
-      "args": ["${extensionPath}${/}example.js"],
-      "cwd": "${extensionPath}"
-    }
-  }
-}
-```
-
-- `name`: The unique name for your extension.
-- `version`: The version of your extension.
-- `mcpServers`: This section defines one or more Model Context Protocol (MCP)
-  servers. MCP servers are how you can add new tools for the model to use.
-  - `command`, `args`, `cwd`: These fields specify how to start your server.
-    Notice the use of the `${extensionPath}` variable, which Gemini CLI replaces
-    with the absolute path to your extension's installation directory. This
-    allows your extension to work regardless of where it's installed.
-
-### `example.js`
-
-This file contains the source code for your MCP server. It's a simple Node.js
-server that uses the `@modelcontextprotocol/sdk`.
-
-```javascript
-/**
- * @license
- * Copyright 2025 Google LLC
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { z } from 'zod';
-
-const server = new McpServer({
-  name: 'prompt-server',
-  version: '1.0.0',
-});
-
-// Registers a new tool named 'fetch_posts'
-server.registerTool(
-  'fetch_posts',
-  {
-    description: 'Fetches a list of posts from a public API.',
-    inputSchema: z.object({}).shape,
-  },
-  async () => {
-    const apiResponse = await fetch(
-      'https://jsonplaceholder.typicode.com/posts',
-    );
-    const posts = await apiResponse.json();
-    const response = { posts: posts.slice(0, 5) };
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(response),
-        },
-      ],
-    };
-  },
-);
-
-// ... (prompt registration omitted for brevity)
-
-const transport = new StdioServerTransport();
-await server.connect(transport);
-```
-
-This server defines a single tool called `fetch_posts` that fetches data from a
-public API.
-
-### `package.json`
-
-This is the standard configuration file for a Node.js project. It defines
-dependencies and scripts.
-
-## Step 3: Link your extension
-
-Before you can use the extension, you need to link it to your Gemini CLI
-installation for local development.
-
-1.  **Install dependencies:**
-
-    ```bash
-    cd my-first-extension
-    npm install
-    ```
-
-2.  **Link the extension:**
-
-    The `link` command creates a symbolic link from the Gemini CLI extensions
-    directory to your development directory. This means any changes you make
-    will be reflected immediately without needing to reinstall.
-
-    ```bash
-    gemini extensions link .
-    ```
-
-Now, restart your Gemini CLI session. The new `fetch_posts` tool will be
-available. You can test it by asking: "fetch posts".
-
-## Step 4: Add a custom command
-
-Custom commands provide a way to create shortcuts for complex prompts. Let's add
-a command that searches for a pattern in your code.
-
-1.  Create a `commands` directory and a subdirectory for your command group:
-
-    ```bash
-    mkdir -p commands/fs
-    ```
-
-2.  Create a file named `commands/fs/grep-code.toml`:
-
-    ```toml
-    prompt = """
-    Please summarize the findings for the pattern `{{args}}`.
-
-    Search Results:
-    !{grep -r {{args}} .}
-    """
-    ```
-
-    This command, `/fs:grep-code`, will take an argument, run the `grep` shell
-    command with it, and pipe the results into a prompt for summarization.
-
-After saving the file, restart the Gemini CLI. You can now run
-`/fs:grep-code "some pattern"` to use your new command.
-
-## Step 5: Add a custom `GEMINI.md`
-
-You can provide persistent context to the model by adding a `GEMINI.md` file to
-your extension. This is useful for giving the model instructions on how to
-behave or information about your extension's tools. Note that you may not always
-need this for extensions built to expose commands and prompts.
-
-1.  Create a file named `GEMINI.md` in the root of your extension directory:
-
-    ```markdown
-    # My First Extension Instructions
-
-    You are an expert developer assistant. When the user asks you to fetch
-    posts, use the `fetch_posts` tool. Be concise in your responses.
-    ```
-
-2.  Update your `gemini-extension.json` to tell the CLI to load this file:
-
-    ```json
-    {
-      "name": "my-first-extension",
-      "version": "1.0.0",
-      "contextFileName": "GEMINI.md",
-      "mcpServers": {
-        "nodeServer": {
-          "command": "node",
-          "args": ["${extensionPath}${/}example.js"],
-          "cwd": "${extensionPath}"
-        }
-      }
-    }
-    ```
-
-Restart the CLI again. The model will now have the context from your `GEMINI.md`
-file in every session where the extension is active.
-
-## (Optional) Step 6: Add an Agent Skill
-
-[Agent Skills](/docs/cli/skills) let you bundle specialized expertise and
-procedural workflows. Unlike `GEMINI.md`, which provides persistent context,
-skills are activated only when needed, saving context tokens.
-
-1.  Create a `skills` directory and a subdirectory for your skill:
-
-    ```bash
-    mkdir -p skills/security-audit
-    ```
-
-2.  Create a `skills/security-audit/SKILL.md` file:
-
-    ```markdown
-    ---
-    name: security-audit
-    description:
-      Expertise in auditing code for security vulnerabilities. Use when the user
-      asks to "check for security issues" or "audit" their changes.
-    ---
-
-    # Security Auditor
-
-    You are an expert security researcher. When auditing code:
-
-    1. Look for common vulnerabilities (OWASP Top 10).
-    2. Check for hardcoded secrets or API keys.
-    3. Suggest remediation steps for any findings.
-    ```
-
-Skills bundled with your extension are automatically discovered and can be
-activated by the model during a session when it identifies a relevant task.
-
-## Step 7: Release your extension
-
-Once you're happy with your extension, you can share it with others. The two
-primary ways of releasing extensions are via a Git repository or through GitHub
-Releases. Using a public Git repository is the simplest method.
-
-For detailed instructions on both methods, please refer to the
-[Extension Releasing Guide](/docs/extensions/releasing).
-
-## Conclusion
-
-You've successfully created a Gemini CLI extension! You learned how to:
-
-- Bootstrap a new extension from a template.
-- Add custom tools with an MCP server.
-- Create convenient custom commands.
-- Provide persistent context to the model.
-- Bundle specialized Agent Skills.
-- Link your extension for local development.
-
-From here, you can explore more advanced features and build powerful new
-capabilities into the Gemini CLI.
+Extension นี้สามารถรวมเข้ากับ Gemini CLI ได้โดยการเพิ่มใน `gemini-extension.json` และสร้าง MCP server wrapper!
