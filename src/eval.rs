@@ -66,6 +66,13 @@ pub fn evaluate(expr: &SpannedExpr, ctx: &Context, registry: &FunctionRegistry) 
                 BinaryOp::Or => logic_or(l, r, span),
             }
         }
+        Expr::ArrayLiteral(elements) => {
+            let values: Result<Vec<Value>, _> = elements
+                .iter()
+                .map(|e| evaluate(e, ctx, registry))
+                .collect();
+            Ok(Value::Array(values?))
+        }
         Expr::FunctionCall { name, args } => {
             let func = registry.find(name).ok_or_else(|| {
                 FormulaError::new(

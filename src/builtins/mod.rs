@@ -5,10 +5,11 @@ pub mod string;
 pub mod math;
 pub mod logic;
 pub mod date;
+pub mod collection;   // เพิ่ม
 
-use crate::functions::{BuiltinFunction, FunctionRegistry};
+use crate::functions::FunctionRegistry;
 
-/// ลงทะเบียน built-in ทั้งหมดจาก Phase 1 ลงใน registry
+/// ลงทะเบียน built-in ทั้งหมด (Phase 1 + Phase 6.1)
 pub fn register_all(registry: &mut FunctionRegistry) {
     // ฟังก์ชัน string
     registry.register(string::len());
@@ -18,13 +19,17 @@ pub fn register_all(registry: &mut FunctionRegistry) {
     registry.register(string::starts_with());
     registry.register(string::ends_with());
 
-    // ฟังก์ชัน logic
-    registry.register(logic::if_fn()); // fn เป็นคำสงวน ใช้ชื่อ if_fn
-
-    // math
+    // ฟังก์ชัน math (min/max ถูกย้ายไป collection)
     registry.register(math::abs());
-    registry.register(math::min());
-    registry.register(math::max());
 
-    // date (phase 2)
+    // ฟังก์ชัน logic
+    registry.register(logic::if_fn());
+
+    // ฟังก์ชัน array (Phase 6.1)
+    registry.register(collection::sum());
+    registry.register(collection::avg());
+    registry.register(collection::min_arr());
+    registry.register(collection::max_arr());
+    registry.register(collection::join());
+    registry.register(collection::count());
 }

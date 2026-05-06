@@ -201,6 +201,22 @@ impl<'a> Parser<'a> {
                 self.expect(TokenKind::RParen, "ต้องการ ')'")?;
                 Ok(SpannedExpr::new(Expr::Grouping(Box::new(inner)), span))
             }
+            TokenKind::LBracket => {
+                // parse array literal: '[' (expression (',' expression)*)? ']'
+                let mut elements = Vec::new();
+                if self.peek() != TokenKind::RBracket {
+                    loop {
+                        elements.push(self.parse_expression()?);
+                        if self.peek() == TokenKind::Comma {
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.expect(TokenKind::RBracket, "ต้องการ ']' ปิดท้าย array")?;
+                Ok(SpannedExpr::new(Expr::ArrayLiteral(elements), span))
+            }
             _ => {
                 Err(FormulaError::new(
                     ErrorKind::ParseError,

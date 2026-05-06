@@ -25,6 +25,8 @@ pub enum TokenKind {
     True,         // true
     False,        // false
     Null,         // null
+    LBracket,   // [
+    RBracket,   // ]
     Eof,          // end of file
 }
 
@@ -300,6 +302,16 @@ impl<'a> Lexer<'a> {
                 }
                 '"' => {
                     self.scan_string()?;
+                }
+                '[' => {
+                    let sl = self.line; let sc = self.col;
+                    self.advance();
+                    self.push_token(TokenKind::LBracket, "[".to_string(), sl, sc);
+                }
+                ']' => {
+                    let sl = self.line; let sc = self.col;
+                    self.advance();
+                    self.push_token(TokenKind::RBracket, "]".to_string(), sl, sc);
                 }
                 c if c.is_alphabetic() || c == '_' => {
                     self.scan_identifier(c);

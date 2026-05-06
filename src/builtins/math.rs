@@ -23,38 +23,4 @@ pub fn abs() -> BuiltinFunction {
     }
 }
 
-pub fn min() -> BuiltinFunction {
-    BuiltinFunction {
-        name: "min".to_string(),
-        arity: 2,
-        call: |args| {
-            match (&args[0], &args[1]) {
-                (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a.min(*b))),
-                _ => Err(FormulaError::new(
-                    ErrorKind::FunctionError,
-                    "E006",
-                    "min ต้องการตัวเลขสองตัว",
-                    None,
-                )),
-            }
-        },
-    }
-}
-
-pub fn max() -> BuiltinFunction {
-    BuiltinFunction {
-        name: "max".to_string(),
-        arity: 2,
-        call: |args| {
-            match (&args[0], &args[1]) {
-                (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a.max(*b))),
-                _ => Err(FormulaError::new(
-                    ErrorKind::FunctionError,
-                    "E006",
-                    "max ต้องการตัวเลขสองตัว",
-                    None,
-                )),
-            }
-        },
-    }
-}
+// min, max เดิมถูกลบออก เพราะถูกแทนที่ด้วย array min/max ใน collection.rs

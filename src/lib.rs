@@ -273,4 +273,104 @@ mod integration_tests {
         assert_eq!(err.kind, ErrorKind::TypeError);
         assert_eq!(err.code, "E006");
     }
+
+    #[test]
+    fn test_array_literal_parsing() {
+        let tokens = tokenize("[1, 2, 3]").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::ArrayLiteral(elems) => assert_eq!(elems.len(), 3),
+            _ => panic!("expect ArrayLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_sum_array() {
+        let tokens = tokenize("sum([1, 2, 3, 4])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let ctx = Context::new();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &ctx, &reg).unwrap();
+        assert_eq!(result, Value::Number(10.0));
+    }
+
+    #[test]
+    fn test_len_array() {
+        let tokens = tokenize("len([1, 2, 3])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let ctx = Context::new();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &ctx, &reg).unwrap();
+        assert_eq!(result, Value::Number(3.0));
+    }
+
+    #[test]
+    fn test_avg_array() {
+        let tokens = tokenize("avg([10, 20])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let ctx = Context::new();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &ctx, &reg).unwrap();
+        assert_eq!(result, Value::Number(15.0));
+    }
+
+    #[test]
+    fn test_min_max_array() {
+        let reg = prepared_registry();
+        // min
+        let tokens = tokenize("min([5, 2, 8])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        assert_eq!(evaluate(&ast, &Context::new(), &reg).unwrap(), Value::Number(2.0));
+        // max
+        let tokens = tokenize("max([5, 2, 8])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        assert_eq!(evaluate(&ast, &Context::new(), &reg).unwrap(), Value::Number(8.0));
+    }
+
+    #[test]
+    fn test_join_array() {
+        let tokens = tokenize("join([\"a\", \"b\"], \", \")").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        assert_eq!(
+            evaluate(&ast, &Context::new(), &reg).unwrap(),
+            Value::String("a, b".to_string())
+        );
+    }
+
+    #[test]
+    fn test_count_array() {
+        let tokens = tokenize("count([1, 2, 3, 4, 5])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        assert_eq!(
+            evaluate(&ast, &Context::new(), &reg).unwrap(),
+            Value::Number(5.0)
+        );
+    }
+
+    #[test]
+    fn test_empty_array() {
+        let tokens = tokenize("[]").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        assert_eq!(
+            evaluate(&ast, &Context::new(), &reg).unwrap(),
+            Value::Array(vec![])
+        );
+    }
+
+    #[test]
+    fn test_nested_array() {
+        let tokens = tokenize("[[1,2], [3,4]]").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        // result should be Array([Array([1,2]), Array([3,4])])
+        if let Value::Array(outer) = result {
+            assert_eq!(outer.len(), 2);
+        } else {
+            panic!("expected array");
+        }
+    }
 }
