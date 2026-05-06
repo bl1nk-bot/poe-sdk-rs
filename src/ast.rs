@@ -1,45 +1,67 @@
-/// ตัวดำเนินการสองตัว (binary)
+use crate::span::Span;
+use crate::value::Value;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum BinaryOp {
-    Add,       // +
-    Sub,       // -
-    Mul,       // *
-    Div,       // /
-    Eq,        // ==
-    NotEq,     // !=
-    Lt,        // <
-    Gt,        // >
-    LtEq,      // <=
-    GtEq,      // >=
-    And,       // &&
-    Or,        // ||
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Eq,
+    NotEq,
+    Lt,
+    Gt,
+    LtEq,
+    GtEq,
+    And,
+    Or,
 }
 
-/// ตัวดำเนินการเดี่ยว (unary)
 #[derive(Debug, Clone, PartialEq)]
 pub enum UnaryOp {
-    Neg,       // -
-    Not,       // !
+    Neg,
+    Not,
 }
 
-/// โหนดนิพจน์ใน AST
-/// ไม่มี logic การคำนวณใด ๆ
+/// ข้อมูลตำแหน่งของ expression ใน source
+#[derive(Debug, Clone, PartialEq)]
+pub struct ExprMeta {
+    pub span: Span,
+}
+
+/// นิพจน์แต่ละตัวจะมีข้อมูล Span ติดไปด้วย
+#[derive(Debug, Clone, PartialEq)]
+pub struct SpannedExpr {
+    pub expr: Expr,
+    pub meta: ExprMeta,
+}
+
+// ทำให้ SpannedExpr สามารถแกะค่า expr ได้ง่าย
+impl SpannedExpr {
+    pub fn new(expr: Expr, span: Span) -> Self {
+        Self {
+            expr,
+            meta: ExprMeta { span },
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    Literal(crate::value::Value),            // ค่าคงที่ เช่น 42, "hello", true
-    Variable(String),                        // ตัวแปร เช่น score
+    Literal(Value),
+    Variable(String),
     UnaryExpr {
         op: UnaryOp,
-        expr: Box<Expr>,
+        expr: Box<SpannedExpr>,
     },
     BinaryExpr {
-        left: Box<Expr>,
+        left: Box<SpannedExpr>,
         op: BinaryOp,
-        right: Box<Expr>,
+        right: Box<SpannedExpr>,
     },
     FunctionCall {
         name: String,
-        args: Vec<Expr>,
+        args: Vec<SpannedExpr>,
     },
-    Grouping(Box<Expr>),                     // วงเล็บ (...)
+    Grouping(Box<SpannedExpr>),
 }
