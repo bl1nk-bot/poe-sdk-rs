@@ -14,10 +14,17 @@ pub fn register_all(registry: &mut FunctionRegistry) {
     registry.register(string::len());
     registry.register(string::upper());
     registry.register(string::lower());
+    registry.register(string::contains());
+    registry.register(string::starts_with());
+    registry.register(string::ends_with());
 
     // ฟังก์ชัน logic
     registry.register(logic::if_fn()); // fn เป็นคำสงวน ใช้ชื่อ if_fn
 
-    // math (ระยะแรกอาจมี abs, round เพิ่มภายหลัง)
+    // math
+    registry.register(math::abs());
+    registry.register(math::min());
+    registry.register(math::max());
+
     // date (phase 2)
 }

@@ -48,3 +48,63 @@ pub fn lower() -> BuiltinFunction {
         },
     }
 }
+
+pub fn contains() -> BuiltinFunction {
+    BuiltinFunction {
+        name: "contains".to_string(),
+        arity: 2,
+        call: |args| {
+            match (&args[0], &args[1]) {
+                (Value::String(haystack), Value::String(needle)) => {
+                    Ok(Value::Bool(haystack.contains(needle)))
+                }
+                _ => Err(FormulaError::new(
+                    ErrorKind::FunctionError,
+                    "E006",
+                    "contains ต้องการข้อความสองตัว",
+                    None,
+                )),
+            }
+        },
+    }
+}
+
+pub fn starts_with() -> BuiltinFunction {
+    BuiltinFunction {
+        name: "starts_with".to_string(),
+        arity: 2,
+        call: |args| {
+            match (&args[0], &args[1]) {
+                (Value::String(text), Value::String(prefix)) => {
+                    Ok(Value::Bool(text.starts_with(prefix)))
+                }
+                _ => Err(FormulaError::new(
+                    ErrorKind::FunctionError,
+                    "E006",
+                    "starts_with ต้องการข้อความสองตัว",
+                    None,
+                )),
+            }
+        },
+    }
+}
+
+pub fn ends_with() -> BuiltinFunction {
+    BuiltinFunction {
+        name: "ends_with".to_string(),
+        arity: 2,
+        call: |args| {
+            match (&args[0], &args[1]) {
+                (Value::String(text), Value::String(suffix)) => {
+                    Ok(Value::Bool(text.ends_with(suffix)))
+                }
+                _ => Err(FormulaError::new(
+                    ErrorKind::FunctionError,
+                    "E006",
+                    "ends_with ต้องการข้อความสองตัว",
+                    None,
+                )),
+            }
+        },
+    }
+}

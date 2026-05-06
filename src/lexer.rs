@@ -24,6 +24,7 @@ pub enum TokenKind {
     GtEq,         // >=
     True,         // true
     False,        // false
+    Null,         // null
     Eof,          // end of file
 }
 
@@ -37,8 +38,8 @@ pub struct Token {
 /// Lexer struct เก็บสถานะการอ่าน
 struct Lexer<'a> {
     source: &'a str,
-    chars: Vec<char>,          // แตกเป็น array ของ char
-    pos: usize,                // ตำแหน่งปัจจุบันใน chars
+    chars: std::str::Chars<'a>, // iterator ของ characters
+    pos: usize,                // ตำแหน่ง byte ใน source
     line: usize,               // บรรทัดปัจจุบัน (เริ่มที่ 1)
     col: usize,                // คอลัมน์ปัจจุบัน (เริ่มที่ 1)
     tokens: Vec<Token>,        // token ที่อ่านได้แล้ว
@@ -48,7 +49,7 @@ impl<'a> Lexer<'a> {
     fn new(source: &'a str) -> Self {
         Self {
             source,
-            chars: source.chars().collect(),
+            chars: source.chars(),
             pos: 0,
             line: 1,
             col: 1,
@@ -58,17 +59,12 @@ impl<'a> Lexer<'a> {
 
     /// ดูตัวอักษรปัจจุบันโดยไม่เลื่อนตำแหน่ง
     fn peek(&self) -> Option<char> {
-        self.chars.get(self.pos).copied()
+        self.source[self.pos..].chars().next()
     }
 
-    /// ดูตัวอักษรถัดไป
-    fn peek_next(&self) -> Option<char> {
-        self.chars.get(self.pos + 1).copied()
-    }
-
-    /// เลื่อนไปยังตัวถัดไป
+    /// เลื่อนไปยังตัวถัดไปและคืนค่าตัวปัจจุบัน
     fn advance(&mut self) -> Option<char> {
-        let ch = self.chars.get(self.pos).copied();
+        let ch = self.peek();
         if let Some(c) = ch {
             if c == '\n' {
                 self.line += 1;
@@ -76,7 +72,7 @@ impl<'a> Lexer<'a> {
             } else {
                 self.col += 1;
             }
-            self.pos += 1;
+            self.pos += c.len_utf8();
         }
         ch
     }
@@ -115,6 +111,7 @@ impl<'a> Lexer<'a> {
         let kind = match lexeme.as_str() {
             "true" => TokenKind::True,
             "false" => TokenKind::False,
+            "null" => TokenKind::Null,
             _ => TokenKind::Identifier,
         };
         self.push_token(kind, lexeme, start_line, start_col);

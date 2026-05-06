@@ -3,6 +3,39 @@
 //! ใช้สำหรับแยกส่วน (parse) ประมวลผล (evaluate) สูตรแบบ Notion-like
 //! สถาปัตยกรรมแบ่งเป็นชั้น: Lexer -> Parser -> Evaluator
 //! รองรับการขยายฟังก์ชันและชนิดข้อมูลผ่าน registry
+//!
+//! # ตัวอย่างการใช้งาน
+//!
+//! ```
+//! use formula_engine::{tokenize, parse, evaluate, Context, FunctionRegistry};
+//! use formula_engine::builtins;
+//!
+//! // สร้าง registry พร้อมฟังก์ชันพื้นฐาน
+//! let mut registry = FunctionRegistry::new();
+//! builtins::register_all(&mut registry);
+//!
+//! // Parse และ evaluate สูตร
+//! let tokens = tokenize("1 + 2 * len(\"hello\")").unwrap();
+//! let ast = parse(&tokens).unwrap();
+//! let ctx = Context::new();
+//! let result = evaluate(&ast, &ctx, &registry).unwrap();
+//!
+//! println!("Result: {:?}", result); // Number(11.0)
+//! ```
+
+/// ```
+/// use formula_engine::{tokenize, parse, evaluate, Context, FunctionRegistry};
+/// use formula_engine::builtins;
+///
+/// let mut registry = FunctionRegistry::new();
+/// builtins::register_all(&mut registry);
+///
+/// let tokens = tokenize("if(true, \"pass\", \"fail\")").unwrap();
+/// let ast = parse(&tokens).unwrap();
+/// let ctx = Context::new();
+/// let result = evaluate(&ast, &ctx, &registry).unwrap();
+/// assert_eq!(result, formula_engine::Value::String("pass".to_string()));
+/// ```
 
 pub mod ast;
 pub mod lexer;
@@ -142,6 +175,39 @@ mod integration_tests {
         let reg = prepared_registry();
         let result = evaluate(&ast, &ctx, &reg).unwrap();
         assert_eq!(result, Value::String("TEST".to_string()));
+    }
+
+    #[test]
+    fn test_nested_function_calls() {
+        let tokens = tokenize("len(upper(\"hello\"))").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let ctx = Context::new();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &ctx, &reg).unwrap();
+        assert_eq!(result, Value::Number(5.0)); // "HELLO".len() = 5
+    }
+
+    #[test]
+    fn test_function_call_with_multiple_args() {
+        let tokens = tokenize("if(true, \"pass\", \"fail\")").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let ctx = Context::new();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &ctx, &reg).unwrap();
+        assert_eq!(result, Value::String("pass".to_string()));
+    }
+
+    #[test]
+    fn test_function_call_wrong_arg_count() {
+        let tokens = tokenize("len(\"hello\", \"world\")").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let ctx = Context::new();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &ctx, &reg);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::FunctionError);
+        assert_eq!(err.code, "E008"); // Wrong arity
     }
 
     #[test]
