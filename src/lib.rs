@@ -373,4 +373,229 @@ mod integration_tests {
             panic!("expected array");
         }
     }
+
+    // -- Additional edge case tests for array features (Phase 6.1) --
+
+    #[test]
+    fn test_len_empty_array() {
+        let tokens = tokenize("len([])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(result, Value::Number(0.0));
+    }
+
+    #[test]
+    fn test_len_non_array_non_string_error() {
+        let tokens = tokenize("len(42)").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::FunctionError);
+        assert_eq!(err.code, "E006");
+    }
+
+    #[test]
+    fn test_sum_empty_array_is_zero() {
+        let tokens = tokenize("sum([])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(result, Value::Number(0.0));
+    }
+
+    #[test]
+    fn test_sum_non_number_element_error() {
+        let tokens = tokenize("sum([\"a\", \"b\"])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::FunctionError);
+        assert_eq!(err.code, "E006");
+    }
+
+    #[test]
+    fn test_avg_empty_array_error() {
+        let tokens = tokenize("avg([])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::FunctionError);
+        assert_eq!(err.code, "E011");
+    }
+
+    #[test]
+    fn test_min_empty_array_error() {
+        let tokens = tokenize("min([])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::FunctionError);
+        assert_eq!(err.code, "E011");
+    }
+
+    #[test]
+    fn test_max_empty_array_error() {
+        let tokens = tokenize("max([])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::FunctionError);
+        assert_eq!(err.code, "E011");
+    }
+
+    #[test]
+    fn test_join_empty_separator() {
+        let tokens = tokenize("join([\"x\", \"y\", \"z\"], \"\")").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(result, Value::String("xyz".to_string()));
+    }
+
+    #[test]
+    fn test_sum_with_float_values() {
+        let tokens = tokenize("sum([1.5, 2.5, 3.0])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(result, Value::Number(7.0));
+    }
+
+    #[test]
+    fn test_sum_with_negative_values() {
+        let tokens = tokenize("sum([-1, -2, 3])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(result, Value::Number(0.0));
+    }
+
+    #[test]
+    fn test_min_with_negative_values() {
+        let tokens = tokenize("min([0, -5, 3])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(result, Value::Number(-5.0));
+    }
+
+    #[test]
+    fn test_max_with_negative_values() {
+        let tokens = tokenize("max([-1, -2, -3])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(result, Value::Number(-1.0));
+    }
+
+    #[test]
+    fn test_count_empty_array() {
+        let tokens = tokenize("count([])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(result, Value::Number(0.0));
+    }
+
+    #[test]
+    fn test_nested_array_inner_values() {
+        let tokens = tokenize("[[1,2], [3,4]]").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        if let Value::Array(outer) = result {
+            assert_eq!(outer.len(), 2);
+            if let Value::Array(inner) = &outer[0] {
+                assert_eq!(inner[0], Value::Number(1.0));
+                assert_eq!(inner[1], Value::Number(2.0));
+            } else {
+                panic!("expected inner array");
+            }
+        } else {
+            panic!("expected outer array");
+        }
+    }
+
+    #[test]
+    fn test_array_in_if_condition() {
+        // Array can be created and passed, len used in condition
+        let tokens = tokenize("if(len([1,2,3]) == 3, \"yes\", \"no\")").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(result, Value::String("yes".to_string()));
+    }
+
+    #[test]
+    fn test_sum_passed_non_array_error() {
+        // sum() expects array, not a plain number
+        let tokens = tokenize("sum(42)").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::FunctionError);
+        assert_eq!(err.code, "E006");
+    }
+
+    #[test]
+    fn test_join_non_string_element_error() {
+        // join() requires string elements
+        let tokens = tokenize("join([1, 2], \"-\")").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::FunctionError);
+        assert_eq!(err.code, "E006");
+    }
+
+    #[test]
+    fn test_array_equality() {
+        // Value::Array supports PartialEq
+        assert_eq!(
+            Value::Array(vec![Value::Number(1.0), Value::Number(2.0)]),
+            Value::Array(vec![Value::Number(1.0), Value::Number(2.0)])
+        );
+        assert_ne!(
+            Value::Array(vec![Value::Number(1.0)]),
+            Value::Array(vec![Value::Number(2.0)])
+        );
+    }
+
+    #[test]
+    fn test_array_with_bool_elements() {
+        // Arrays may hold booleans
+        let tokens = tokenize("[true, false]").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let reg = prepared_registry();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(result, Value::Array(vec![Value::Bool(true), Value::Bool(false)]));
+    }
+
+    #[test]
+    fn test_count_equals_len_for_array() {
+        // count and len should agree on array size
+        let reg = prepared_registry();
+        let tokens_count = tokenize("count([1, 2, 3])").unwrap();
+        let ast_count = parse(&tokens_count).unwrap();
+        let tokens_len = tokenize("len([1, 2, 3])").unwrap();
+        let ast_len = parse(&tokens_len).unwrap();
+        let result_count = evaluate(&ast_count, &Context::new(), &reg).unwrap();
+        let result_len = evaluate(&ast_len, &Context::new(), &reg).unwrap();
+        assert_eq!(result_count, result_len);
+    }
 }

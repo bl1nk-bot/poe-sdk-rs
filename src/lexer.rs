@@ -414,4 +414,96 @@ mod tests {
         assert_eq!(err.kind, ErrorKind::LexError);
         assert_eq!(err.code, "E001");
     }
+
+    // -- Tests for LBracket/RBracket (added in Phase 6.1) --
+
+    #[test]
+    fn test_lbracket_token() {
+        let tokens = tokenize("[").unwrap();
+        // [ + EOF
+        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens[0].kind, TokenKind::LBracket);
+        assert_eq!(tokens[0].lexeme, "[");
+    }
+
+    #[test]
+    fn test_rbracket_token() {
+        let tokens = tokenize("]").unwrap();
+        // ] + EOF
+        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens[0].kind, TokenKind::RBracket);
+        assert_eq!(tokens[0].lexeme, "]");
+    }
+
+    #[test]
+    fn test_empty_array_brackets() {
+        let tokens = tokenize("[]").unwrap();
+        // [ ] EOF
+        assert_eq!(tokens.len(), 3);
+        assert_eq!(tokens[0].kind, TokenKind::LBracket);
+        assert_eq!(tokens[1].kind, TokenKind::RBracket);
+        assert_eq!(tokens[2].kind, TokenKind::Eof);
+    }
+
+    #[test]
+    fn test_array_with_numbers_tokens() {
+        let tokens = tokenize("[1, 2, 3]").unwrap();
+        let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind.clone()).collect();
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::LBracket,
+                TokenKind::Number,
+                TokenKind::Comma,
+                TokenKind::Number,
+                TokenKind::Comma,
+                TokenKind::Number,
+                TokenKind::RBracket,
+                TokenKind::Eof,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_bracket_lexemes() {
+        let tokens = tokenize("[42]").unwrap();
+        assert_eq!(tokens[0].lexeme, "[");
+        assert_eq!(tokens[1].lexeme, "42");
+        assert_eq!(tokens[2].lexeme, "]");
+    }
+
+    #[test]
+    fn test_nested_array_brackets() {
+        let tokens = tokenize("[[1]]").unwrap();
+        let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind.clone()).collect();
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::LBracket,
+                TokenKind::LBracket,
+                TokenKind::Number,
+                TokenKind::RBracket,
+                TokenKind::RBracket,
+                TokenKind::Eof,
+            ]
+        );
+    }
+
+    #[test]
+    fn test_bracket_inside_function_call_tokens() {
+        let tokens = tokenize("sum([1])").unwrap();
+        let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind.clone()).collect();
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::Identifier,
+                TokenKind::LParen,
+                TokenKind::LBracket,
+                TokenKind::Number,
+                TokenKind::RBracket,
+                TokenKind::RParen,
+                TokenKind::Eof,
+            ]
+        );
+    }
 }
