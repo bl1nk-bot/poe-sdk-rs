@@ -2,6 +2,7 @@ use crate::ast::{BinaryOp, Expr, SpannedExpr, UnaryOp};
 use crate::context::Context;
 use crate::error::{ErrorKind, FormulaError};
 use crate::functions::FunctionRegistry;
+use crate::span::Span;
 use crate::value::Value;
 
 /// ประเมินผล SpannedExpr แล้วคืน Value
@@ -9,7 +10,7 @@ pub fn evaluate(expr: &SpannedExpr, ctx: &Context, registry: &FunctionRegistry) 
     let span = expr.meta.span;
     match &expr.expr {
         Expr::Literal(val) => Ok(val.clone()),
-        Expr::Variable(name) => ctx.get(name).ok_or_else(|| {
+        Expr::Variable(name) => ctx.get(name).cloned().ok_or_else(|| {
             FormulaError::new(
                 ErrorKind::ContextError,
                 "E005",
@@ -91,22 +92,14 @@ pub fn evaluate(expr: &SpannedExpr, ctx: &Context, registry: &FunctionRegistry) 
                 .iter()
                 .map(|a| evaluate(a, ctx, registry))
                 .collect::<Result<_, _>>()?;
-            // เรียกฟังก์ชันที่ implement ด้วย FormulaError (ไม่ใช่ String)
-            (func.call)(&evaluated_args).map_err(|msg| {
-                FormulaError::new(
-                    ErrorKind::FunctionError,
-                    "E009",
-                    &msg,
-                    Some(span),
-                )
-            })
+            // เรียกฟังก์ชันที่ implement ด้วย FormulaError โดยตรง
+            (func.call)(&evaluated_args)
         }
     }
 }
 
 // ฟังก์ชันช่วยเหลือทางคณิตศาสตร์
 fn add_values(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
-    use crate::span::Span;
     use Value::*;
     match (l, r) {
         (Number(a), Number(b)) => Ok(Number(a + b)),

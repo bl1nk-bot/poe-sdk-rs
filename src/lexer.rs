@@ -101,8 +101,9 @@ impl<'a> Lexer<'a> {
         let start_col = self.col;
         let mut lexeme = String::new();
         lexeme.push(first);
+        self.advance(); // เลื่อนไปหลัง first
         // เดินหน้าต่อไปตราบใดเป็นตัวอักษร ตัวเลข หรือ '_'
-        while let Some(&c) = self.chars.get(self.pos) {
+        while let Some(c) = self.peek() {
             if c.is_alphanumeric() || c == '_' {
                 lexeme.push(c);
                 self.advance();
@@ -125,7 +126,8 @@ impl<'a> Lexer<'a> {
         let start_col = self.col;
         let mut lexeme = String::new();
         lexeme.push(first);
-        while let Some(&c) = self.chars.get(self.pos) {
+        self.advance(); // เลื่อนไปหลัง first
+        while let Some(c) = self.peek() {
             if c.is_ascii_digit() || c == '.' {
                 lexeme.push(c);
                 self.advance();
@@ -366,5 +368,41 @@ mod tests {
         assert_eq!(kinds[0], TokenKind::Identifier);
         assert_eq!(tokens[0].lexeme, "if");
         assert!(kinds.contains(&TokenKind::String));
+    }
+
+    #[test]
+    fn test_unterminated_string() {
+        let result = tokenize("\"hello world");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::LexError);
+        assert_eq!(err.code, "E001");
+    }
+
+    #[test]
+    fn test_invalid_single_ampersand() {
+        let result = tokenize("a & b");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::LexError);
+        assert_eq!(err.code, "E001");
+    }
+
+    #[test]
+    fn test_invalid_single_pipe() {
+        let result = tokenize("a | b");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::LexError);
+        assert_eq!(err.code, "E001");
+    }
+
+    #[test]
+    fn test_invalid_single_equals() {
+        let result = tokenize("a = b");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::LexError);
+        assert_eq!(err.code, "E001");
     }
 }

@@ -278,7 +278,16 @@ impl<'a> Parser<'a> {
 
 pub fn parse(tokens: &[Token]) -> Result<SpannedExpr, FormulaError> {
     let mut parser = Parser::new(tokens);
-    parser.parse_expression()
+    let expr = parser.parse_expression()?;
+    if parser.pos < tokens.len() - 1 { // -1 เพราะมี EOF
+        return Err(FormulaError::new(
+            ErrorKind::ParseError,
+            "E002",
+            "มี tokens เหลือหลัง parse expression",
+            Some(token_span(tokens, parser.pos)),
+        ));
+    }
+    Ok(expr)
 }
 
 #[cfg(test)]
@@ -313,5 +322,34 @@ mod tests {
             }
             _ => panic!("expected function call"),
         }
+    }
+
+    #[test]
+    fn test_unclosed_parenthesis() {
+        let tokens = tokenize("1 + (2 * 3").unwrap();
+        let result = parse(&tokens);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::ParseError);
+        assert_eq!(err.code, "E002");
+    }
+
+    #[test]
+    fn test_missing_comma_in_function() {
+        let tokens = tokenize("if(true \"pass\" \"fail\")").unwrap();
+        let result = parse(&tokens);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::ParseError);
+    }
+
+    #[test]
+    fn test_invalid_number() {
+        let tokens = tokenize("123abc").unwrap();
+        let result = parse(&tokens);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::ParseError);
+        assert_eq!(err.code, "E002"); // มี tokens เหลือหลัง parse expression
     }
 }
