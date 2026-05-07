@@ -2,6 +2,31 @@
 name = "formula_engine"
 version = "0.1.0"
 edition = "2021"
+authors = ["Formula Engine Team"]
+description = "A high-performance, extensible formula evaluation engine for Rust"
+license = "MIT OR Apache-2.0"
+keywords = ["formula", "expression", "evaluation", "parser", "calculator"]
+categories = ["parsing", "mathematics", "data-structures"]
+homepage = "https://github.com/your-org/formula-engine"
+repository = "https://github.com/your-org/formula-engine"
+documentation = "https://docs.rs/formula_engine"
+readme = "README.md"
+exclude = [
+    ".github/",
+    "docs/",
+    "benches/",
+    "tests/",
+    "*.md",
+    "!README.md",
+]
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+insta = "1.34"
+
+[[bench]]
+name = "evaluation"
+harness = false

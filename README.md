@@ -1,8 +1,12 @@
 # Formula Engine
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/rust-2021-orange.svg)](https://www.rust-lang.org)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 [![Version](https://img.shields.io/badge/version-0.1.0-green.svg)]()
+[![Build Status](https://github.com/your-org/formula-engine/workflows/CI/badge.svg)](https://github.com/your-org/formula-engine/actions)
+[![Documentation](https://docs.rs/formula_engine/badge.svg)](https://docs.rs/formula_engine)
+[![Crates.io](https://img.shields.io/crates/v/formula_engine.svg)](https://crates.io/crates/formula_engine)
+[![Downloads](https://img.shields.io/crates/d/formula_engine.svg)](https://crates.io/crates/formula_engine)
 
 ## 📖 ภาพรวม
 
