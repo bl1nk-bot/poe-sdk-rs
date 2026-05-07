@@ -193,7 +193,6 @@ pub use value::Value;
 /// let result = evaluate(&ast, &ctx, &registry).unwrap();
 /// assert_eq!(result, Value::Number(95.0));
 /// ```
-
 #[cfg(test)]
 mod integration_tests {
     use super::*;

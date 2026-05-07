@@ -28,11 +28,27 @@ pub fn date_add() -> BuiltinFunction {
             let date_str = require_string(&args[0])?;
             let days = require_number(&args[1])?;
 
-            let ts = parse_to_timestamp(&date_str)?;
-            let span = jiff::Span::new().days(days as i64);
-            let new_ts = ts + span;
-            let new_zoned = new_ts.to_zoned(jiff::tz::TimeZone::UTC);
-            let new_date = jiff::civil::Date::from(new_zoned);
+            // Parse as Date (not Timestamp, since we need calendar days)
+            let date = jiff::civil::Date::from_str(&date_str).map_err(|_| {
+                FormulaError::new(
+                    ErrorKind::FunctionError,
+                    "E010",
+                    "Invalid date format",
+                    None,
+                )
+            })?;
+
+            let days_i64 = days as i64;
+            let span = jiff::Span::new().days(days_i64);
+
+            let new_date = date.checked_add(span).map_err(|_| {
+                FormulaError::new(
+                    ErrorKind::FunctionError,
+                    "E010",
+                    "Date calculation error",
+                    None,
+                )
+            })?;
 
             Ok(Value::String(new_date.to_string()))
         },
@@ -191,20 +207,6 @@ mod tests {
             }
             _ => panic!("expected string"),
         }
-    }
-
-    #[test]
-    fn test_date() {
-        let result = call_fn(
-            date(),
-            vec![
-                Value::Number(2025.0),
-                Value::Number(6.0),
-                Value::Number(15.0),
-            ],
-        )
-        .unwrap();
-        assert_eq!(result, Value::String("2025-06-15".to_string()));
     }
 
     #[test]

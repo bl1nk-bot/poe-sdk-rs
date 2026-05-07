@@ -74,7 +74,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn register_custom_functions(registry: &mut FunctionRegistry) {
     // Fibonacci function
     fn fibonacci(args: &[Value]) -> Result<Value, FormulaError> {
-        match args.get(0) {
+        match args.first() {
             Some(Value::Number(n)) if *n >= 0.0 && n.fract() == 0.0 => {
                 let n = *n as u32;
                 let result = fib_recursive(n);
@@ -99,7 +99,7 @@ fn register_custom_functions(registry: &mut FunctionRegistry) {
 
     // Power function
     fn power(args: &[Value]) -> Result<Value, FormulaError> {
-        match (args.get(0), args.get(1)) {
+        match (args.first(), args.get(1)) {
             (Some(Value::Number(base)), Some(Value::Number(exp))) => {
                 Ok(Value::Number(base.powf(*exp)))
             }
@@ -114,7 +114,7 @@ fn register_custom_functions(registry: &mut FunctionRegistry) {
 
     // Is even function
     fn is_even(args: &[Value]) -> Result<Value, FormulaError> {
-        match args.get(0) {
+        match args.first() {
             Some(Value::Number(n)) if n.fract() == 0.0 => Ok(Value::Bool((*n as i64) % 2 == 0)),
             _ => Err(FormulaError::new(
                 formula_engine::error::ErrorKind::TypeError,
@@ -127,7 +127,7 @@ fn register_custom_functions(registry: &mut FunctionRegistry) {
 
     // Clamp function
     fn clamp(args: &[Value]) -> Result<Value, FormulaError> {
-        match (args.get(0), args.get(1), args.get(2)) {
+        match (args.first(), args.get(1), args.get(2)) {
             (Some(Value::Number(val)), Some(Value::Number(min)), Some(Value::Number(max))) => {
                 let clamped = val.max(*min).min(*max);
                 Ok(Value::Number(clamped))

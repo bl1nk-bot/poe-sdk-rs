@@ -20,7 +20,7 @@ mod error_snapshots {
         let result = tokenize("\"hello world");
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_snapshot!("unterminated_string", format_error(&err, "\"hello world"));
+        assert_snapshot!("unterminated_string", format_error("\"hello world", &err));
     }
 
     #[test]
@@ -28,7 +28,7 @@ mod error_snapshots {
         let result = tokenize("1 + @");
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_snapshot!("invalid_token", format_error(&err, "1 + @"));
+        assert_snapshot!("invalid_token", format_error("1 + @", &err));
     }
 
     #[test]
@@ -37,7 +37,7 @@ mod error_snapshots {
         let result = parse(&tokens);
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_snapshot!("unclosed_parenthesis", format_error(&err, "1 + (2 * 3"));
+        assert_snapshot!("unclosed_parenthesis", format_error("1 + (2 * 3", &err));
     }
 
     #[test]
@@ -46,7 +46,7 @@ mod error_snapshots {
         let result = parse(&tokens);
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_snapshot!("unclosed_array", format_error(&err, "[1, 2, 3"));
+        assert_snapshot!("unclosed_array", format_error("[1, 2, 3", &err));
     }
 
     #[test]
@@ -55,7 +55,7 @@ mod error_snapshots {
         let result = parse(&tokens);
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_snapshot!("unclosed_map", format_error(&err, "{key: value"));
+        assert_snapshot!("unclosed_map", format_error("{key: value", &err));
     }
 
     #[test]
@@ -66,7 +66,7 @@ mod error_snapshots {
         let result = evaluate(&ast, &ctx, &registry);
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_snapshot!("division_by_zero", format_error(&err, "10 / 0"));
+        assert_snapshot!("division_by_zero", format_error("10 / 0", &err));
     }
 
     #[test]
@@ -77,7 +77,7 @@ mod error_snapshots {
         let result = evaluate(&ast, &ctx, &registry);
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_snapshot!("unknown_function", format_error(&err, "unknown_func(1)"));
+        assert_snapshot!("unknown_function", format_error("unknown_func(1)", &err));
     }
 
     #[test]
@@ -90,7 +90,7 @@ mod error_snapshots {
         let err = result.unwrap_err();
         assert_snapshot!(
             "wrong_argument_count",
-            format_error(&err, "len(\"hello\", \"world\")")
+            format_error("len(\"hello\", \"world\")", &err)
         );
     }
 
@@ -102,7 +102,7 @@ mod error_snapshots {
         let result = evaluate(&ast, &ctx, &registry);
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_snapshot!("type_mismatch", format_error(&err, "1 + \"string\""));
+        assert_snapshot!("type_mismatch", format_error("1 + \"string\"", &err));
     }
 
     #[test]
@@ -113,7 +113,7 @@ mod error_snapshots {
         let result = evaluate(&ast, &ctx, &registry);
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert_snapshot!("unknown_variable", format_error(&err, "unknown_var"));
+        assert_snapshot!("unknown_variable", format_error("unknown_var", &err));
     }
 
     #[test]
@@ -126,7 +126,7 @@ mod error_snapshots {
         let err = result.unwrap_err();
         assert_snapshot!(
             "array_function_wrong_type",
-            format_error(&err, "sum(\"not_an_array\")")
+            format_error("sum(\"not_an_array\")", &err)
         );
     }
 }

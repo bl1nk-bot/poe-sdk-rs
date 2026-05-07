@@ -313,7 +313,7 @@ mod tests {
     fn test_arithmetic() {
         let tokens = tokenize("1 + 2 * 3").unwrap();
         let ast = parse(&tokens).unwrap();
-        if let Expr::BinaryExpr { left, op, right } = &ast.expr {
+        if let Expr::BinaryExpr { left: _, op, right } = &ast.expr {
             assert_eq!(*op, BinaryOp::Add);
             if let Expr::BinaryExpr {
                 left: _,
