@@ -1,29 +1,91 @@
-# Session 2 Technical Specification: Advanced Formula Engine
+# Architecture Rust สำหรับ Formula Engine (Session 2)
 
-## Overview
+โครงแบบสำหรับสร้าง **formula/calculation library** ด้วย Rust ให้เติบโตแบบค่อยเป็นค่อยไป เหมาะกับแนว Notion-like formula engine และ POE SDK
 
-Session 2 builds upon Session 1's solid foundation to add advanced features that enable complex formula evaluation scenarios. The focus is on extensibility, performance, and advanced data manipulation capabilities.
+สถานะปัจจุบัน: **V1 เสร็จสมบูรณ์** → **Session 2 พร้อมเริ่มดำเนินการ**
 
-## Architecture Extensions
+---
 
-### Core Components (Extended)
+## 1) เป้าหมายของระบบ
 
-#### AST Extensions
+1. **Parse** ข้อความสูตรเป็นโครงสร้างภายใน ✅
+2. **Evaluate** สูตรให้ได้ค่า ✅
+3. **Extend** เพิ่มฟังก์ชัน/ชนิดข้อมูล/บริบทได้ง่าย ✅
+4. **Navigate** เข้าถึงข้อมูล nested ผ่าน dot/index notation 🚧 (Phase 8)
+5. **Functional** รองรับ lambda, higher-order functions 🚧 (Phase 9)
+6. **User-defined** ให้ผู้ใช้สร้างฟังก์ชันเองได้ 🚧 (Phase 10)
+7. **Rich Types** มี DateTime/Duration แบบ native (ผ่าน `jiff`) 🚧 (Phase 11)
+8. **Plugin SDK** เปิดให้ third-party ขยายความสามารถ 🚧 (Phase 13)
+
+---
+
+## 2) ขอบเขตของระบบ
+
+### ✅ In scope (V1 – เสร็จแล้ว)
+- นิพจน์คณิตศาสตร์, เปรียบเทียบ, logic
+- String operations, function call, variable/context
+- Error reporting ทุกชั้น, extensible built-in functions
+- Built-in collection functions (sum, avg, min, max, count, join)
+- Basic date functions (now, year, month, day, date_add, date_diff) ใช้ `jiff` ภายใน
+
+### 🚧 Session 2 (กำลังพัฒนา)
+- **Access chaining** (`obj.prop`, `arr[0]`)
+- **Lambda expression** `(x) => x * 2`
+- **Higher-order functions**: `map`, `filter`, `reduce`
+- **User-defined function**: `fn name(params) = expression`
+- **Native Date/Time/Duration** via `jiff`
+- **Set, Range literals**
+- **Serialization & caching**
+- **Plugin SDK foundation** (Trait + Manager)
+
+### ❌ Out of scope (Session 2)
+- WASM sandboxing สำหรับ plugin
+- JIT compilation
+- Asynchronous evaluation
+- Static type system ซับซ้อน
+- Null-safe navigation operator (`?.`)
+
+---
+
+## 3) Architecture ระดับสูง (Extended)
+
+### Layer 1: Input Layer ✅
+### Layer 2: Lexing 🚧 (เพิ่ม token Dot)
+### Layer 3: Parsing 🚧 (เพิ่ม postfix chain, lambda)
+### Layer 4: Evaluation 🚧 (เพิ่ม property/index access, lambda call, UDF)
+### Layer 5: Plugin SDK 🆕 (Phase 13)
+
+---
+
+## 4) AST Extensions (Session 2)
+
 ```rust
 pub enum Expr {
-    // Session 1 expressions...
+    // V1 expressions...
+    Literal(Value),
+    Variable(String),
+    UnaryExpr { op: UnaryOp, expr: Box<SpannedExpr> },
+    BinaryExpr { left: Box<SpannedExpr>, op: BinaryOp, right: Box<SpannedExpr> },
+    FunctionCall { name: String, args: Vec<SpannedExpr> },
+    Grouping(Box<SpannedExpr>),
+
+    // Phase 8: Property & Index Access
     PropertyAccess {
         object: Box<SpannedExpr>,
         property: String,
     },
     IndexAccess {
-        array: Box<SpannedExpr>,
+        object: Box<SpannedExpr>,
         index: Box<SpannedExpr>,
     },
+
+    // Phase 9: Lambda
     LambdaExpr {
         params: Vec<String>,
         body: Box<SpannedExpr>,
     },
+
+    // Phase 10: User-defined function
     FunctionDef {
         name: String,
         params: Vec<String>,
@@ -32,22 +94,36 @@ pub enum Expr {
 }
 ```
 
-#### Value Extensions
+---
+
+5) Value Extensions (Jiff-based)
+
 ```rust
 pub enum Value {
-    // Session 1 values...
-    DateTime(DateTime<Utc>),
-    Duration(Duration),
-    Set(HashSet<Value>),
+    // V1 values
+    Number(f64),
+    String(String),
+    Bool(bool),
+    Null,
+    Array(Vec<Value>),
+    Map(HashMap<String, Value>),
+
+    // Phase 11: Advanced (pure Rust, no C dependency)
+    DateTime(jiff::Timestamp),   // Native timestamp
+    Duration(jiff::Span),        // Time interval
+    Set(BTreeSet<Value>),        // Unique collection (sorted)
     Range { start: i64, end: i64 },
 }
 ```
 
-#### Context Extensions
+---
+
+6) Context & User Functions
+
 ```rust
 pub struct Context {
     variables: HashMap<String, Value>,
-    functions: HashMap<String, UserFunction>, // New
+    functions: HashMap<String, UserFunction>,  // Phase 10
 }
 
 pub struct UserFunction {
@@ -58,11 +134,12 @@ pub struct UserFunction {
 }
 ```
 
-### New Components
+---
 
-#### Plugin System
+7) Plugin SDK Foundation (Phase 13)
+
 ```rust
-pub trait Plugin {
+pub trait Plugin: Send + Sync {
     fn name(&self) -> &str;
     fn version(&self) -> &str;
     fn functions(&self) -> Vec<BuiltinFunction>;
@@ -70,333 +147,140 @@ pub trait Plugin {
 }
 
 pub struct PluginManager {
-    plugins: HashMap<String, Box<dyn Plugin>>,
-    sandbox: Sandbox,
+    plugins: Vec<Box<dyn Plugin>>,
+}
+
+impl PluginManager {
+    pub fn new() -> Self { /* ... */ }
+    pub fn register(&mut self, plugin: Box<dyn Plugin>) { /* ... */ }
+    pub fn merge_functions(&self, registry: &mut FunctionRegistry) { /* ... */ }
 }
 ```
 
-#### Serialization
-```rust
-pub trait Serializable {
-    fn serialize(&self) -> Result<String, SerializationError>;
-    fn deserialize(data: &str) -> Result<Self, SerializationError>;
-}
+หมายเหตุ: WASM sandboxing, dynamic loading, security ไม่อยู่ใน Session 2
 
-impl Serializable for SpannedExpr {
-    // AST serialization implementation
-}
+---
+
+8) Syntax Extensions
+
+Property & Index Access (Phase 8)
+
 ```
-
-## Syntax Extensions
-
-### Access Chaining
-```
-# Property access
 user.name
 user.profile.email
 data.items[0].price
-
-# Null-safe navigation
-user?.profile?.name
-
-# Array indexing
-array[0]
-array[index + 1]
 matrix[0][1]
 ```
 
-### Lambda Expressions
+Lambda Expressions (Phase 9)
+
 ```
-# Anonymous functions
 (x) => x * 2
 (x, y) => x + y
 (item) => item.price > 100
-
-# Used in higher-order functions
-map([1,2,3], (x) => x * 2)          # [2,4,6]
-filter([1,2,3,4], (x) => x % 2 == 0) # [2,4]
-reduce([1,2,3,4], (acc, x) => acc + x, 0) # 10
 ```
 
-### User-Defined Functions
+User-Defined Functions (Phase 10)
+
 ```
-# Function definition
 fn double(x) = x * 2
 fn factorial(n) = if(n <= 1, 1, n * factorial(n - 1))
-fn greet(name) = "Hello, " + name + "!"
-
-# Usage
-double(5)        # 10
-factorial(5)     # 120
-greet("World")   # "Hello, World!"
 ```
 
-### Advanced Data Literals
+Literals (Phase 11)
+
 ```
-# DateTime literals
+# DateTime (jiff)
 @2023-12-25T10:30:00Z
-@2023-01-01                   # Midnight UTC
+@2023-01-01
 
-# Duration literals
-1h 30m                         # 1 hour 30 minutes
-2d 3h 45m                      # 2 days, 3 hours, 45 minutes
+# Duration
+1h30m
+2d3h45m
 
-# Range literals
-1..10                          # inclusive range
-'a'..'z'                       # character range
+# Range
+1..10
+'a'..'z'
 
-# Set literals
-{1, 2, 3, 2}                  # {1, 2, 3} (duplicates removed)
+# Set
+{1, 2, 3}
 ```
 
-## Function Categories
+---
 
-### Collection Functions (Extended)
-```rust
-// Session 1 functions + extensions
-sum(array)
-avg(array)
-min(array)
-max(array)
-count(array)
-join(array, separator)
+9) Function Categories (Session 2 Additions)
 
-// New higher-order functions
-map(array, lambda)
-filter(array, lambda)
-reduce(array, lambda, initial)
-group_by(array, key_lambda)
-sort(array, compare_lambda)
-unique(array)
-```
+Higher-Order (Phase 9)
 
-### Date/Time Functions (Extended)
-```rust
-// Session 1 functions
-now()
-date_add(date, days)
-date_diff(date1, date2)
-year(date)
-month(date)
-day(date)
+map(array, lambda), filter(array, lambda), reduce(array, lambda, initial), sort(array, lambda), group_by(array, lambda), unique(array)
 
-// Extended functions
-hour(datetime)
-minute(datetime)
-second(datetime)
-weekday(datetime)
-format_date(datetime, format)
-parse_date(string, format)
-is_weekend(datetime)
-date_between(datetime, start, end)
-```
+Date/Time Extended (Phase 11)
 
-### String Functions (Extended)
-```rust
-// Session 1 functions
-len(string)
-upper(string)
-lower(string)
-contains(string, substr)
-starts_with(string, prefix)
-ends_with(string, suffix)
+hour(dt), minute(dt), second(dt), weekday(dt), format_date(dt, fmt), parse_date(str), is_weekend(dt), date_between(dt, start, end)
 
-// Extended functions
-trim(string)
-split(string, separator)
-replace(string, old, new)
-substring(string, start, length)
-regex_match(string, pattern)
-regex_replace(string, pattern, replacement)
-```
+String Extended
 
-### Math Functions (Extended)
-```rust
-// Session 1 functions
-abs(number)
+trim(s), split(s, sep), replace(s, old, new), substring(s, start, len)
 
-// Extended functions
-round(number, decimals)
-ceil(number)
-floor(number)
-sqrt(number)
-pow(base, exponent)
-log(number, base)
-sin(angle)
-cos(angle)
-tan(angle)
-pi()
-e()
-random()
-random_between(min, max)
-```
+Math Extended
 
-## Performance Optimizations
+round(n, d), ceil(n), floor(n), sqrt(n), pow(b, e), log(n, base), sin, cos, tan, pi(), random()
 
-### AST Optimizations
-- Constant folding: `1 + 2` → `3`
-- Dead code elimination
-- Function inlining for small functions
-- Loop unrolling for small arrays
+---
 
-### Evaluation Optimizations
-- Lazy evaluation for boolean expressions
-- Short-circuit evaluation
-- Memoization for recursive functions
-- Vectorized operations for arrays
+10) Performance & Caching
 
-### Caching Strategies
-- AST caching for repeated formulas
-- Function result caching
-- Context snapshot caching
-- Compiled bytecode caching
+· Constant folding optimization pass (Phase 14)
+· AST caching สำหรับ repeated formulas (Phase 12)
+· Short-circuit evaluation for boolean ops
+· Vectorized operations สำหรับ arrays ขนาดใหญ่
+· Benchmark suite ด้วย criterion (Phase 14)
 
-## Plugin Architecture
+---
 
-### Plugin Interface
-```rust
-#[derive(Serialize, Deserialize)]
-pub struct PluginManifest {
-    name: String,
-    version: String,
-    description: String,
-    author: String,
-    functions: Vec<FunctionSpec>,
-    types: Vec<TypeSpec>,
-}
+11) Error Handling Extensions
 
-pub trait Plugin {
-    fn manifest(&self) -> PluginManifest;
-    fn initialize(&mut self, context: &mut PluginContext) -> Result<(), PluginError>;
-    fn execute(&self, name: &str, args: &[Value]) -> Result<Value, PluginError>;
-}
-```
-
-### Sandboxing
-- Resource limits (CPU, memory)
-- Network access control
-- File system restrictions
-- Timeout enforcement
-- Error isolation
-
-## Error Handling Extensions
-
-### Error Categories (Extended)
 ```rust
 pub enum ErrorKind {
-    // Session 1 errors...
+    // V1 errors...
+    LexError, ParseError, EvalError, TypeError,
+    FunctionError, ContextError,
+
+    // Session 2
     PropertyNotFound,
     IndexOutOfBounds,
-    TypeMismatch,
     RecursionLimitExceeded,
+    LambdaArityMismatch,
     PluginError,
     SerializationError,
 }
 ```
 
-### Enhanced Diagnostics
-- Stack traces for function calls
-- Variable inspection
-- Performance profiling data
-- Plugin execution logs
+---
 
-## Serialization Format
+12) Testing & CI
 
-### AST Serialization
-```json
-{
-  "type": "BinaryExpr",
-  "left": {
-    "type": "Literal",
-    "value": {"type": "Number", "value": 1}
-  },
-  "op": "Add",
-  "right": {
-    "type": "Literal",
-    "value": {"type": "Number", "value": 2}
-  }
-}
-```
+· Unit tests สำหรับ AST parsing ทุกโหนดใหม่
+· Integration tests สำหรับ higher-order functions กับ lambda
+· Roundtrip serialization tests
+· Fuzz testing สำหรับ parser ของ access chain
+· CI: cargo fmt, cargo clippy, cargo test บน pure Rust toolchain (ไม่มี C dependency)
 
-### Context Serialization
-```json
-{
-  "variables": {
-    "user": {"type": "Map", "value": {"name": "Alice", "age": 30}},
-    "items": {"type": "Array", "value": [1, 2, 3]}
-  },
-  "functions": {
-    "double": {
-      "params": ["x"],
-      "body": {"type": "BinaryExpr", "left": "x", "op": "Mul", "right": 2}
-    }
-  }
-}
-```
+---
 
-## Testing Strategy
+13) Migration from V1
 
-### Unit Tests
-- AST parsing and serialization
-- Function evaluation
-- Plugin loading and execution
-- Error handling edge cases
+· API เดิมทั้งหมดยังคงใช้ได้
+· Value::DateTime และ Value::Duration เพิ่มเข้ามา แต่ไม่บังคับใช้
+· ฟังก์ชัน date เดิมที่ return string ยังคงมีอยู่ (แต่ภายในใช้ native เพื่อความเร็ว)
+· Plugin SDK เป็น opt-in ทั้งหมด
 
-### Integration Tests
-- Complex formula evaluation
-- Plugin interactions
-- Performance benchmarks
-- Memory usage validation
+---
 
-### Fuzz Testing
-- Random formula generation
-- Invalid input handling
-- Memory safety verification
+14) Future (Session 3+)
 
-## Performance Benchmarks
-
-### Target Metrics
-- **Parsing**: < 100μs for 1000-token formulas
-- **Evaluation**: < 10μs for simple expressions
-- **Memory**: < 1MB per concurrent evaluation
-- **Plugin Load**: < 50ms for plugin initialization
-
-### Benchmark Suite
-```rust
-// Example benchmark
-#[bench]
-fn bench_complex_formula(b: &mut Bencher) {
-    let formula = r#"
-        map(
-            filter([1,2,3,4,5,6,7,8,9,10], (x) => x % 2 == 0),
-            (x) => x * x
-        )
-    "#;
-    // Benchmark evaluation...
-}
-```
-
-## Migration Guide
-
-### From Session 1
-- All Session 1 APIs remain compatible
-- New features are opt-in
-- Performance improvements are automatic
-
-### Breaking Changes
-- Minimal breaking changes expected
-- Deprecation warnings for legacy features
-- Migration tools provided
-
-## Future Compatibility
-
-### Versioning Strategy
-- Semantic versioning for API changes
-- Plugin API versioning
-- Backward compatibility guarantees
-
-### Extensibility Points
-- Custom type registration
-- Operator overloading
-- Custom evaluation strategies
-- Third-party plugins
+· JIT/Cranelift compilation
+· WebAssembly-based plugin sandbox
+· IDE Language Server Protocol (LSP)
+· User-defined types
+· Pattern matching
