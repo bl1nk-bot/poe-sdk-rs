@@ -30,16 +30,11 @@ pub fn date_add() -> BuiltinFunction {
 
             let ts = parse_to_timestamp(&date_str)?;
             let span = jiff::Span::new().days(days as i64);
-            let new_ts = ts.checked_add(span).map_err(|_| {
-                FormulaError::new(
-                    ErrorKind::FunctionError,
-                    "E010",
-                    "Date calculation error",
-                    None,
-                )
-            })?;
+            let new_ts = ts + span;
+            let new_zoned = new_ts.to_zoned(jiff::tz::TimeZone::UTC);
+            let new_date = jiff::civil::Date::from(new_zoned);
 
-            Ok(Value::String(new_ts.to_string()))
+            Ok(Value::String(new_date.to_string()))
         },
     }
 }

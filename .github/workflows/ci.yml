@@ -35,7 +35,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Update Rust toolchain
+      - name: Ensure latest Rust
         run: rustup update stable
 
       - name: Check formatting
@@ -73,7 +73,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Update Rust toolchain
+      - name: Ensure latest Rust
         run: rustup update stable
 
       - name: Test basic example
@@ -100,7 +100,7 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Update Rust toolchain
+      - name: Ensure latest Rust
         run: rustup update stable
 
       - name: Test and update snapshots
