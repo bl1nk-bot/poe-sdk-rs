@@ -64,4 +64,5 @@ pub enum Expr {
         args: Vec<SpannedExpr>,
     },
     Grouping(Box<SpannedExpr>),
+    ArrayLiteral(Vec<SpannedExpr>),   // เพิ่ม: array literal elements
 }

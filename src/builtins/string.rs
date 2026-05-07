@@ -10,10 +10,11 @@ pub fn len() -> BuiltinFunction {
         call: |args| {
             match &args[0] {
                 Value::String(s) => Ok(Value::Number(s.len() as f64)),
+                Value::Array(arr) => Ok(Value::Number(arr.len() as f64)),
                 _ => Err(FormulaError::new(
                     ErrorKind::FunctionError,
                     "E006",
-                    "len ต้องการข้อความ",
+                    "len ต้องการข้อความหรือ array",
                     None,
                 )),
             }

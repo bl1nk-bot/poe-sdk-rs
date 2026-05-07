@@ -201,6 +201,22 @@ impl<'a> Parser<'a> {
                 self.expect(TokenKind::RParen, "ต้องการ ')'")?;
                 Ok(SpannedExpr::new(Expr::Grouping(Box::new(inner)), span))
             }
+            TokenKind::LBracket => {
+                // parse array literal: '[' (expression (',' expression)*)? ']'
+                let mut elements = Vec::new();
+                if self.peek() != TokenKind::RBracket {
+                    loop {
+                        elements.push(self.parse_expression()?);
+                        if self.peek() == TokenKind::Comma {
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.expect(TokenKind::RBracket, "ต้องการ ']' ปิดท้าย array")?;
+                Ok(SpannedExpr::new(Expr::ArrayLiteral(elements), span))
+            }
             _ => {
                 Err(FormulaError::new(
                     ErrorKind::ParseError,
@@ -288,5 +304,119 @@ mod tests {
         let err = result.unwrap_err();
         assert_eq!(err.kind, ErrorKind::ParseError);
         assert_eq!(err.code, "E002"); // มี tokens เหลือหลัง parse expression
+    }
+
+    // -- Tests for ArrayLiteral parsing (added in Phase 6.1) --
+
+    #[test]
+    fn test_empty_array_literal() {
+        let tokens = tokenize("[]").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::ArrayLiteral(elems) => assert_eq!(elems.len(), 0),
+            _ => panic!("expected ArrayLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_single_element_array() {
+        let tokens = tokenize("[42]").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::ArrayLiteral(elems) => {
+                assert_eq!(elems.len(), 1);
+                match &elems[0].expr {
+                    Expr::Literal(crate::value::Value::Number(n)) => assert_eq!(*n, 42.0),
+                    _ => panic!("expected number literal"),
+                }
+            }
+            _ => panic!("expected ArrayLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_multi_element_array() {
+        let tokens = tokenize("[1, 2, 3]").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::ArrayLiteral(elems) => assert_eq!(elems.len(), 3),
+            _ => panic!("expected ArrayLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_array_with_string_elements() {
+        let tokens = tokenize("[\"a\", \"b\"]").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::ArrayLiteral(elems) => {
+                assert_eq!(elems.len(), 2);
+                match &elems[0].expr {
+                    Expr::Literal(crate::value::Value::String(s)) => assert_eq!(s, "a"),
+                    _ => panic!("expected string literal"),
+                }
+            }
+            _ => panic!("expected ArrayLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_nested_array_literal() {
+        let tokens = tokenize("[[1, 2], [3, 4]]").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::ArrayLiteral(elems) => {
+                assert_eq!(elems.len(), 2);
+                match &elems[0].expr {
+                    Expr::ArrayLiteral(inner) => assert_eq!(inner.len(), 2),
+                    _ => panic!("expected nested ArrayLiteral"),
+                }
+            }
+            _ => panic!("expected ArrayLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_unclosed_array_literal() {
+        let tokens = tokenize("[1, 2").unwrap();
+        let result = parse(&tokens);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::ParseError);
+        assert_eq!(err.code, "E002");
+    }
+
+    #[test]
+    fn test_array_with_expression_elements() {
+        let tokens = tokenize("[1 + 2, 3 * 4]").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::ArrayLiteral(elems) => {
+                assert_eq!(elems.len(), 2);
+                // First element should be a BinaryExpr (Add)
+                match &elems[0].expr {
+                    Expr::BinaryExpr { op, .. } => assert_eq!(*op, BinaryOp::Add),
+                    _ => panic!("expected BinaryExpr"),
+                }
+            }
+            _ => panic!("expected ArrayLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_array_as_function_arg() {
+        let tokens = tokenize("sum([1, 2, 3])").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::FunctionCall { name, args } => {
+                assert_eq!(name, "sum");
+                assert_eq!(args.len(), 1);
+                match &args[0].expr {
+                    Expr::ArrayLiteral(elems) => assert_eq!(elems.len(), 3),
+                    _ => panic!("expected ArrayLiteral as arg"),
+                }
+            }
+            _ => panic!("expected FunctionCall"),
+        }
     }
 }
