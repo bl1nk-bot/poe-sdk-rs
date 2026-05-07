@@ -1,0 +1,48 @@
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Rust (fmt + clippy + test)
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout โค้ด
+      - uses: actions/checkout@v4
+
+      # 2. Cache dependencies เพื่อความรวดเร็ว
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # 3. ติดตั้ง Rust stable
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      # 4. ตรวจสอบการจัดรูปแบบโค้ด (ถ้าไม่ตรงจะ fail)
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      # 5. ตรวจสอบด้วย Clippy (warnings ทั้งหมดจะถูกมองเป็น error)
+      - name: Clippy lint
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      # 6. รันการทดสอบทั้งหมด (รวม unit, integration, doc-tests)
+      - name: Run tests
+        run: cargo test --verbose
