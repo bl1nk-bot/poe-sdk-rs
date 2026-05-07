@@ -14,7 +14,7 @@ pub fn sum() -> BuiltinFunction {
             let arr = require_array(&args[0])?;
             let total: f64 = arr
                 .iter()
-                .map(|v| require_number(v))
+                .map(require_number)
                 .sum::<Result<f64, FormulaError>>()?;
             Ok(Value::Number(total))
         },
@@ -39,7 +39,7 @@ pub fn avg() -> BuiltinFunction {
             }
             let total: f64 = arr
                 .iter()
-                .map(|v| require_number(v))
+                .map(require_number)
                 .sum::<Result<f64, FormulaError>>()?;
             Ok(Value::Number(total / arr.len() as f64))
         },
@@ -125,8 +125,7 @@ pub fn join() -> BuiltinFunction {
         call: |args| {
             let arr = require_array(&args[0])?;
             let sep = require_string(&args[1])?;
-            let parts: Result<Vec<String>, FormulaError> =
-                arr.iter().map(|v| require_string(v)).collect();
+            let parts: Result<Vec<String>, FormulaError> = arr.iter().map(require_string).collect();
             Ok(Value::String(parts?.join(&sep)))
         },
     }
