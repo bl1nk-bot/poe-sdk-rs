@@ -1,1 +1,41 @@
-Nothing should be ignored since only a README.md file was modified and no build artifacts, dependencies, or temporary files were detected in the changes.
+# Rust build artifacts
+target/
+Cargo.lock
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.bak
+
+# Coverage reports
+*.profraw
+*.profdata
+cobertura.xml
+
+# Criterion benchmark artifacts
+criterion-*
+
+# Backup files
+*~
