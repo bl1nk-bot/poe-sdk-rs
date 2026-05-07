@@ -35,6 +35,9 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
+      - name: Update Rust toolchain
+        run: rustup update stable
+
       - name: Check formatting
         run: cargo fmt --all -- --check
 
@@ -70,6 +73,9 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
+      - name: Update Rust toolchain
+        run: rustup update stable
+
       - name: Test basic example
         run: cargo run --example basic
 
@@ -93,6 +99,9 @@ jobs:
 
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
+
+      - name: Update Rust toolchain
+        run: rustup update stable
 
       - name: Test and update snapshots
         run: cargo test --test error_snapshots
