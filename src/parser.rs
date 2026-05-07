@@ -5,7 +5,10 @@ use crate::span::Span;
 
 /// สร้าง Span จาก token list โดยอ้างอิง index
 fn token_span(tokens: &[Token], idx: usize) -> Span {
-    tokens.get(idx).map(|t| t.span).expect("BUG: token index out of bounds")
+    tokens
+        .get(idx)
+        .map(|t| t.span)
+        .expect("BUG: token index out of bounds")
 }
 
 pub struct Parser<'a> {
@@ -19,7 +22,10 @@ impl<'a> Parser<'a> {
     }
 
     fn peek(&self) -> TokenKind {
-        self.tokens.get(self.pos).map(|t| t.kind.clone()).unwrap_or(TokenKind::Eof)
+        self.tokens
+            .get(self.pos)
+            .map(|t| t.kind.clone())
+            .unwrap_or(TokenKind::Eof)
     }
 
     fn advance(&mut self) -> &Token {
@@ -60,11 +66,14 @@ impl<'a> Parser<'a> {
                 start: left.meta.span.start,
                 end: right.meta.span.end,
             };
-            left = SpannedExpr::new(Expr::BinaryExpr {
-                left: Box::new(left),
-                op: op.clone(),
-                right: Box::new(right),
-            }, span);
+            left = SpannedExpr::new(
+                Expr::BinaryExpr {
+                    left: Box::new(left),
+                    op: op.clone(),
+                    right: Box::new(right),
+                },
+                span,
+            );
         }
         Ok(left)
     }
@@ -94,7 +103,10 @@ impl<'a> Parser<'a> {
     fn parse_equality(&mut self) -> Result<SpannedExpr, FormulaError> {
         self.parse_left_associative_binary(
             Self::parse_comparison,
-            &[(TokenKind::EqEq, BinaryOp::Eq), (TokenKind::NotEq, BinaryOp::NotEq)],
+            &[
+                (TokenKind::EqEq, BinaryOp::Eq),
+                (TokenKind::NotEq, BinaryOp::NotEq),
+            ],
         )
     }
 
@@ -115,7 +127,10 @@ impl<'a> Parser<'a> {
     fn parse_term(&mut self) -> Result<SpannedExpr, FormulaError> {
         self.parse_left_associative_binary(
             Self::parse_factor,
-            &[(TokenKind::Plus, BinaryOp::Add), (TokenKind::Minus, BinaryOp::Sub)],
+            &[
+                (TokenKind::Plus, BinaryOp::Add),
+                (TokenKind::Minus, BinaryOp::Sub),
+            ],
         )
     }
 
@@ -123,7 +138,10 @@ impl<'a> Parser<'a> {
     fn parse_factor(&mut self) -> Result<SpannedExpr, FormulaError> {
         self.parse_left_associative_binary(
             Self::parse_unary,
-            &[(TokenKind::Star, BinaryOp::Mul), (TokenKind::Slash, BinaryOp::Div)],
+            &[
+                (TokenKind::Star, BinaryOp::Mul),
+                (TokenKind::Slash, BinaryOp::Div),
+            ],
         )
     }
 
@@ -142,10 +160,13 @@ impl<'a> Parser<'a> {
                 start: op_span.start,
                 end: expr.meta.span.end,
             };
-            return Ok(SpannedExpr::new(Expr::UnaryExpr {
-                op,
-                expr: Box::new(expr),
-            }, span));
+            return Ok(SpannedExpr::new(
+                Expr::UnaryExpr {
+                    op,
+                    expr: Box::new(expr),
+                },
+                span,
+            ));
         }
         self.parse_primary()
     }
@@ -157,22 +178,34 @@ impl<'a> Parser<'a> {
         match &tok.kind {
             TokenKind::Number => {
                 let n: f64 = tok.lexeme.parse().map_err(|_| {
-                    FormulaError::new(ErrorKind::ParseError, "E003", "ไม่สามารถแปลงตัวเลขได้", Some(span))
+                    FormulaError::new(
+                        ErrorKind::ParseError,
+                        "E003",
+                        "ไม่สามารถแปลงตัวเลขได้",
+                        Some(span),
+                    )
                 })?;
-                Ok(SpannedExpr::new(Expr::Literal(crate::value::Value::Number(n)), span))
+                Ok(SpannedExpr::new(
+                    Expr::Literal(crate::value::Value::Number(n)),
+                    span,
+                ))
             }
-            TokenKind::String => {
-                Ok(SpannedExpr::new(Expr::Literal(crate::value::Value::String(tok.lexeme.clone())), span))
-            }
-            TokenKind::True => {
-                Ok(SpannedExpr::new(Expr::Literal(crate::value::Value::Bool(true)), span))
-            }
-            TokenKind::False => {
-                Ok(SpannedExpr::new(Expr::Literal(crate::value::Value::Bool(false)), span))
-            }
-            TokenKind::Null => {
-                Ok(SpannedExpr::new(Expr::Literal(crate::value::Value::Null), span))
-            }
+            TokenKind::String => Ok(SpannedExpr::new(
+                Expr::Literal(crate::value::Value::String(tok.lexeme.clone())),
+                span,
+            )),
+            TokenKind::True => Ok(SpannedExpr::new(
+                Expr::Literal(crate::value::Value::Bool(true)),
+                span,
+            )),
+            TokenKind::False => Ok(SpannedExpr::new(
+                Expr::Literal(crate::value::Value::Bool(false)),
+                span,
+            )),
+            TokenKind::Null => Ok(SpannedExpr::new(
+                Expr::Literal(crate::value::Value::Null),
+                span,
+            )),
             TokenKind::Identifier => {
                 let name = tok.lexeme.clone();
                 // ถ้าเจอ '(' ข้างหน้า คือ function call
@@ -217,14 +250,41 @@ impl<'a> Parser<'a> {
                 self.expect(TokenKind::RBracket, "ต้องการ ']' ปิดท้าย array")?;
                 Ok(SpannedExpr::new(Expr::ArrayLiteral(elements), span))
             }
-            _ => {
-                Err(FormulaError::new(
-                    ErrorKind::ParseError,
-                    "E004",
-                    &format!("ไม่คาดคิด token: {:?}", tok.kind),
-                    Some(span),
-                ))
+            TokenKind::LBrace => {
+                // parse map literal: '{' (identifier ':' expression (',' identifier ':' expression)*)? '}'
+                let mut pairs = Vec::new();
+                if self.peek() != TokenKind::RBrace {
+                    loop {
+                        // expect identifier as key
+                        let key_tok = self.advance();
+                        if key_tok.kind != TokenKind::Identifier {
+                            return Err(FormulaError::new(
+                                ErrorKind::ParseError,
+                                "E002",
+                                "key ใน map ต้องเป็น identifier",
+                                Some(token_span(self.tokens, self.pos - 1)),
+                            ));
+                        }
+                        let key = key_tok.lexeme.clone();
+                        self.expect(TokenKind::Colon, "ต้องการ ':' หลัง key")?;
+                        let value = self.parse_expression()?;
+                        pairs.push((key, value));
+                        if self.peek() == TokenKind::Comma {
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.expect(TokenKind::RBrace, "ต้องการ '}' ปิดท้าย map")?;
+                Ok(SpannedExpr::new(Expr::MapLiteral(pairs), span))
             }
+            _ => Err(FormulaError::new(
+                ErrorKind::ParseError,
+                "E004",
+                &format!("ไม่คาดคิด token: {:?}", tok.kind),
+                Some(span),
+            )),
         }
     }
 }
@@ -232,7 +292,8 @@ impl<'a> Parser<'a> {
 pub fn parse(tokens: &[Token]) -> Result<SpannedExpr, FormulaError> {
     let mut parser = Parser::new(tokens);
     let expr = parser.parse_expression()?;
-    if parser.pos < tokens.len() - 1 { // -1 เพราะมี EOF
+    if parser.pos < tokens.len() - 1 {
+        // -1 เพราะมี EOF
         return Err(FormulaError::new(
             ErrorKind::ParseError,
             "E002",
@@ -254,7 +315,12 @@ mod tests {
         let ast = parse(&tokens).unwrap();
         if let Expr::BinaryExpr { left, op, right } = &ast.expr {
             assert_eq!(*op, BinaryOp::Add);
-            if let Expr::BinaryExpr { left: _, op: op2, right: _ } = &right.expr {
+            if let Expr::BinaryExpr {
+                left: _,
+                op: op2,
+                right: _,
+            } = &right.expr
+            {
                 assert_eq!(*op2, BinaryOp::Mul);
             } else {
                 panic!("expected multiplication");
@@ -418,5 +484,96 @@ mod tests {
             }
             _ => panic!("expected FunctionCall"),
         }
+    }
+
+    // -- Tests for MapLiteral parsing (added in Phase 6.2) --
+
+    #[test]
+    fn test_empty_map_literal() {
+        let tokens = tokenize("{}").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::MapLiteral(pairs) => assert_eq!(pairs.len(), 0),
+            _ => panic!("expected MapLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_single_key_value_map() {
+        let tokens = tokenize("{key: 42}").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::MapLiteral(pairs) => {
+                assert_eq!(pairs.len(), 1);
+                assert_eq!(pairs[0].0, "key");
+                match &pairs[0].1.expr {
+                    Expr::Literal(crate::value::Value::Number(n)) => assert_eq!(*n, 42.0),
+                    _ => panic!("expected number literal"),
+                }
+            }
+            _ => panic!("expected MapLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_multi_key_value_map() {
+        let tokens = tokenize("{a: 1, b: \"hello\", c: true}").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::MapLiteral(pairs) => {
+                assert_eq!(pairs.len(), 3);
+                assert_eq!(pairs[0].0, "a");
+                assert_eq!(pairs[1].0, "b");
+                assert_eq!(pairs[2].0, "c");
+            }
+            _ => panic!("expected MapLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_map_with_expression_values() {
+        let tokens = tokenize("{sum: 1 + 2}").unwrap();
+        let ast = parse(&tokens).unwrap();
+        match ast.expr {
+            Expr::MapLiteral(pairs) => {
+                assert_eq!(pairs.len(), 1);
+                assert_eq!(pairs[0].0, "sum");
+                match &pairs[0].1.expr {
+                    Expr::BinaryExpr { op, .. } => assert_eq!(*op, BinaryOp::Add),
+                    _ => panic!("expected BinaryExpr"),
+                }
+            }
+            _ => panic!("expected MapLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_unclosed_map_literal() {
+        let tokens = tokenize("{key: value").unwrap();
+        let result = parse(&tokens);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::ParseError);
+        assert_eq!(err.code, "E002");
+    }
+
+    #[test]
+    fn test_map_with_non_identifier_key() {
+        let tokens = tokenize("{123: value}").unwrap();
+        let result = parse(&tokens);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::ParseError);
+        assert_eq!(err.code, "E002");
+    }
+
+    #[test]
+    fn test_map_missing_colon() {
+        let tokens = tokenize("{key value}").unwrap();
+        let result = parse(&tokens);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert_eq!(err.kind, ErrorKind::ParseError);
+        assert_eq!(err.code, "E002");
     }
 }

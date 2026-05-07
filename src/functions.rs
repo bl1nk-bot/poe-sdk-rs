@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use crate::error::FormulaError;
 use crate::value::Value;
+use std::collections::HashMap;
 
 pub struct BuiltinFunction {
     pub name: String,

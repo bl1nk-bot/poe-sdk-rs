@@ -36,18 +36,17 @@
 /// let result = evaluate(&ast, &ctx, &registry).unwrap();
 /// assert_eq!(result, formula_engine::Value::String("pass".to_string()));
 /// ```
-
 pub mod ast;
+pub mod builtins;
+pub mod context;
+pub mod diagnostics;
+pub mod error;
+pub mod eval;
+pub mod functions;
 pub mod lexer;
 pub mod parser;
-pub mod value;
-pub mod eval;
-pub mod context;
-pub mod functions;
-pub mod error;
 pub mod span;
-pub mod diagnostics;
-pub mod builtins;
+pub mod value;
 
 // re-export สิ่งที่ผู้ใช้ต้องการ
 pub use ast::Expr;
@@ -64,10 +63,10 @@ mod integration_tests {
     use super::*;
     use context::Context;
     use error::ErrorKind;
+    use eval::evaluate;
     use functions::FunctionRegistry;
     use lexer::tokenize;
     use parser::parse;
-    use eval::evaluate;
 
     // สร้าง registry พร้อมฟังก์ชันพื้นฐาน
     fn prepared_registry() -> FunctionRegistry {
@@ -169,7 +168,8 @@ mod integration_tests {
 
     #[test]
     fn test_complex_expression() {
-        let tokens = tokenize("if(len(\"hello\") > 3 && 5 >= 5, upper(\"test\"), \"fail\")").unwrap();
+        let tokens =
+            tokenize("if(len(\"hello\") > 3 && 5 >= 5, upper(\"test\"), \"fail\")").unwrap();
         let ast = parse(&tokens).unwrap();
         let ctx = Context::new();
         let reg = prepared_registry();
@@ -320,11 +320,17 @@ mod integration_tests {
         // min
         let tokens = tokenize("min([5, 2, 8])").unwrap();
         let ast = parse(&tokens).unwrap();
-        assert_eq!(evaluate(&ast, &Context::new(), &reg).unwrap(), Value::Number(2.0));
+        assert_eq!(
+            evaluate(&ast, &Context::new(), &reg).unwrap(),
+            Value::Number(2.0)
+        );
         // max
         let tokens = tokenize("max([5, 2, 8])").unwrap();
         let ast = parse(&tokens).unwrap();
-        assert_eq!(evaluate(&ast, &Context::new(), &reg).unwrap(), Value::Number(8.0));
+        assert_eq!(
+            evaluate(&ast, &Context::new(), &reg).unwrap(),
+            Value::Number(8.0)
+        );
     }
 
     #[test]
@@ -583,7 +589,10 @@ mod integration_tests {
         let ast = parse(&tokens).unwrap();
         let reg = prepared_registry();
         let result = evaluate(&ast, &Context::new(), &reg).unwrap();
-        assert_eq!(result, Value::Array(vec![Value::Bool(true), Value::Bool(false)]));
+        assert_eq!(
+            result,
+            Value::Array(vec![Value::Bool(true), Value::Bool(false)])
+        );
     }
 
     #[test]
