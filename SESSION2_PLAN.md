@@ -1,174 +1,162 @@
-# แผนงาน Session 2: Advanced Formula Engine Features (7 Phases)
+# แผนงานแบบเฟส – Session 2 (Advanced Features)
 
-หลังจาก Session 1 เสร็จสิ้น (Phases 0-7) ซึ่งครอบคลุม core functionality และ production readiness แล้ว Session 2 จะมุ่งเน้นการขยายขีดความสามารถขั้นสูงเพื่อให้ engine สามารถใช้งานใน scenarios ที่ซับซ้อนมากขึ้น
+สถานะ: **V1 เสร็จสมบูรณ์** → Session 2 เริ่มต้น
+
+---
 
 ## Session 2 Overview
 
-**เป้าหมายหลัก:** ขยายขีดความสามารถของ engine ให้รองรับ use cases ขั้นสูง
-- Access chaining (dot notation: `user.profile.name`)
-- Higher-order functions (map, filter, reduce)
-- User-defined functions และ modules
-- Advanced data types (DateTime objects, Duration)
-- Serialization และ caching
+**เป้าหมายหลัก:** ขยาย engine ให้เป็น platform สำหรับ formula computation ที่ทรงพลัง
+- Access chaining (`obj.prop`, `arr[0]`)
+- Lambda & higher-order functions (`map`, `filter`, `reduce`)
+- User-defined functions (`fn`)
+- Native DateTime/Duration (ผ่าน `jiff`)
+- Plugin SDK foundation
+- Serialization & caching
 - Performance optimizations
-- Plugin system และ extensions
 
-**กำหนดการ:** 7 Phases รวม ~3-4 เดือน
-
----
-
-## Phase 8: Access Chaining & Object Navigation 🚧
-**เป้าหมาย:** รองรับการเข้าถึง nested data structures
-
-**งานที่ต้องทำ:**
-- Implement dot notation parsing: `user.name`, `data.items[0].price`
-- Add property access evaluation for Maps
-- Support bracket notation for arrays: `arr[0]`, `arr[index]`
-- Add null-safe navigation: `user?.profile?.name`
-- Type checking for property access
-- Error handling for missing properties
-
-**ไฟล์ที่เกี่ยวข้อง:** `src/ast.rs` (PropertyAccess), `src/eval.rs`, `src/parser.rs`
+**Timeline:** ~14 สัปดาห์ (7 phases)
 
 ---
 
-## Phase 9: Higher-Order Functions 🚧
-**เป้าหมาย:** รองรับ functional programming patterns
+## Phase 8: Access Chaining & Indexing 🚧
 
-**งานที่ต้องทำ:**
-- Implement `map(array, lambda)` function
-- Implement `filter(array, lambda)` function
-- Implement `reduce(array, lambda, initial)` function
-- Add lambda expression syntax: `(x) => x * 2`
-- Support closures and variable capture
-- Optimize for performance with iterators
+**Priority:** 🔴 สูงสุด (ทุก use case ต้องการ)
 
-**ไฟล์ที่เกี่ยวข้อง:** `src/ast.rs` (LambdaExpr), `src/builtins/functional.rs`
+**งาน:**
+- เพิ่ม `PropertyAccess` และ `IndexAccess` ใน AST
+- Lexer: เพิ่ม token `Dot` สำหรับ `.`
+- Parser: สร้าง method `parse_postfix` เพื่อรองรับ chain `expr '.' IDENT` และ `expr '[' expr ']'` (left-associative)
+- Evaluator:
+  - `PropertyAccess`: evaluate object, ถ้าเป็น `Map` ให้ lookup property, ถ้าไม่พบแจ้ง `PropertyNotFound`
+  - `IndexAccess`: evaluate object และ index, ถ้า object เป็น `Array` และ index เป็น `Number` ให้เข้าถึง element, ตรวจสอบ bounds
+- Error: `PropertyNotFound`, `IndexOutOfBounds`
+- Tests: nested objects, mixed chain, error cases
+
+**Files:** `ast.rs`, `lexer.rs`, `parser.rs`, `eval.rs`, `error.rs`
+
+---
+
+## Phase 9: Lambda & Higher-Order Functions 🚧
+
+**Priority:** 🔴 สูงสุด (หัวใจ functional)
+
+**งาน:**
+- `LambdaExpr` ใน AST: `params: Vec<String>`, `body: Box<SpannedExpr>`
+- Lexer: token `Arrow` (`=>`)
+- Parser: `'(' params ')' '=>' expression` (lambda เป็น expression)
+- Evaluation:
+  - สร้าง closure struct `Lambda` ที่เก็บ params, body, และ environment (copy ของ context ปัจจุบัน)
+  - เมื่อถูกเรียกผ่าน `map`/`filter`/`reduce` ให้ bind arguments เข้ากับ params แล้ว evaluate body
+- Built-in functions: `map`, `filter`, `reduce`, `sort`, `group_by`, `unique` (รับ lambda เป็น argument)
+- Tests: lambda ทุก arity, nested lambda, higher-order กับ array เปล่า, closure จับตัวแปร
+
+**Files:** `ast.rs`, `lexer.rs`, `parser.rs`, `eval.rs`, `builtins/functional.rs`
 
 ---
 
 ## Phase 10: User-Defined Functions 🚧
-**เป้าหมาย:** อนุญาตให้ผู้ใช้กำหนดฟังก์ชันเอง
 
-**งานที่ต้องทำ:**
-- Add function definition syntax: `fn add(x, y) = x + y`
-- Implement function storage and lookup
-- Support recursion with proper limits
-- Add function metadata (description, parameters)
-- Implement function serialization
-- Add function debugging and introspection
+**Priority:** 🟡 รองจาก Lambda
 
-**ไฟล์ที่เกี่ยวข้อง:** `src/functions.rs` (UserFunction), `src/ast.rs` (FunctionDef)
+**งาน:**
+- Syntax: `fn name(params) = expression`
+- Parser: `FunctionDef` ใน AST
+- Context: เก็บ `HashMap<String, UserFunction>`
+- Evaluation: เมื่อเจอ `FunctionCall` ที่ชื่อตรงกับ UDF ให้ bind arguments เข้ากับ params แล้ว evaluate body
+- Recursion limit (configurable) เพื่อป้องกัน stack overflow
+- Tests: factorial, mutual recursion, edge cases (recursion limit)
 
----
-
-## Phase 11: Advanced Data Types 🚧
-**เป้าหมาย:** ขยายระบบชนิดข้อมูล
-
-**งานที่ต้องทำ:**
-- Implement native DateTime type (beyond string representation)
-- Add Duration/TimeSpan type
-- Implement Set type for unique collections
-- Add Range type: `1..10`, `a..z`
-- Support type conversion functions
-- Add custom type validation
-
-**ไฟล์ที่เกี่ยวข้อง:** `src/value.rs` (DateTime, Duration, Set, Range)
+**Files:** `functions.rs`, `context.rs`, `parser.rs`, `eval.rs`
 
 ---
 
-## Phase 12: Serialization & Persistence 🚧
-**เป้าหมาย:** รองรับการ serialize และ cache formulas
+## Phase 11: Advanced Data Types (jiff) 🚧
 
-**งานที่ต้องทำ:**
-- Implement AST serialization to JSON/Binary
-- Add formula compilation and caching
-- Support context serialization
-- Implement formula bytecode compilation
-- Add persistent function registry
-- Performance optimizations via caching
+**Priority:** 🟡 (จำเป็นสำหรับ date/time จริงจัง)
 
-**ไฟล์ที่เกี่ยวข้อง:** `src/serialization.rs`, `src/cache.rs`
+**งาน:**
+- เพิ่ม `Value::DateTime(Timestamp)`, `Value::Duration(Span)`, `Set(BTreeSet<Value>)`, `Range { start, end }`
+- Parser literals:
+  - `@2023-01-01` → `DateTime`
+  - `1h30m` → `Duration`
+  - `1..10` → `Range`
+  - `{1,2,3}` → `Set`
+- ปรับ Date functions ให้ทำงานบน native `DateTime` โดยตรง (ภายในยังมีเวอร์ชันที่รับ string เพื่อ backward compatibility)
+- Conversion functions: `to_datetime(str)`, `to_duration(str)`
+- Arithmetic: `DateTime + Duration`, `DateTime - DateTime` (ได้ Duration)
+- Tests: arithmetic กับ duration, comparison กับ datetime, set operations
+
+**Files:** `value.rs`, `parser.rs`, `eval.rs`, `builtins/date.rs`
 
 ---
 
-## Phase 13: Plugin System 🚧
-**เป้าหมาย:** สร้างระบบ plugin สำหรับขยายความสามารถ
+## Phase 12: Serialization & Caching 🚧
 
-**งานที่ต้องทำ:**
-- Design plugin interface (WASM/WebAssembly)
-- Implement plugin loading and sandboxing
-- Add custom function registration from plugins
-- Support plugin-provided data types
-- Implement plugin marketplace/registry
-- Add plugin security and validation
+**Priority:** 🟢 (production ready)
 
-**ไฟล์ที่เกี่ยวข้อง:** `src/plugins/`, `src/sandbox.rs`
+**งาน:**
+- Serde derive บน `Expr`, `Value`, `Context` (behind feature gate `serialization`)
+- `FormulaCache` – key-value store (`String` → `SpannedExpr`) สำหรับ parsed formulas
+- `eval_cached(formula, ctx, registry)` – parse once, eval many
+- Context snapshot & restore
+- Tests: roundtrip JSON, cache hit/miss
+
+**Files:** `serialization.rs`, `cache.rs`, `lib.rs`
+
+---
+
+## Phase 13: Plugin SDK Foundation 🚧
+
+**Priority:** 🟢 (เปิด extensibility)
+
+**งาน:**
+- `trait Plugin` และ `PluginManager` (ตาม SPEC)
+- `FunctionRegistry::import_plugin(&mut self, plugin: &dyn Plugin)`
+- Plugin conflict resolution (name collision → error)
+- Tests: register plugin, call plugin function
+- **ไม่อยู่ใน scope:** WASM, sandbox, dynamic loading
+
+**Files:** `plugins.rs`, `functions.rs`, `lib.rs`
 
 ---
 
 ## Phase 14: Performance & Optimization 🚧
-**เป้าหมาย:** เพิ่มประสิทธิภาพและ scalability
 
-**งานที่ต้องทำ:**
-- Implement AST optimization passes
-- Add Just-In-Time (JIT) compilation
-- Parallel evaluation for large datasets
-- Memory pool allocation
-- Advanced caching strategies
-- Profiling and bottleneck identification
+**Priority:** 🟢 (หลัง feature ครบ)
 
-**ไฟล์ที่เกี่ยวข้อง:** `src/optimizer.rs`, `src/jit.rs`, `src/profiling.rs`
+**งาน:**
+- Constant folding pass เมื่อ parse เสร็จ (evaluate constant sub-expressions)
+- Vectorized `map`/`filter` สำหรับ array ขนาดใหญ่ (ใช้ rayon หรือ iterator)
+- Benchmark suite ด้วย `criterion`
+- Profile guided optimization points
+- Docs: performance best practices
 
----
-
-## Session 2 Architecture Principles
-
-**คงไว้:**
-- Zero-cost abstractions
-- Strong type safety
-- Extensible design
-- Clear error messages
-- Performance focus
-
-**เพิ่มเติม:**
-- Plugin safety and sandboxing
-- Advanced optimization capabilities
-- Functional programming support
-- Rich type system
+**Files:** `optimizer.rs`, `profiling.rs`, `benches/`
 
 ---
 
-## Session 2 Deliverables
+## Timeline (ประมาณการ)
 
-1. **Core Engine** พร้อม advanced features
-2. **Plugin System** สำหรับ third-party extensions
-3. **Performance Tools** สำหรับ large-scale deployments
-4. **Documentation** และ examples สำหรับ advanced use cases
-5. **Benchmarks** และ performance comparisons
-6. **Migration Guide** จาก Session 1
-
----
-
-## Risk Assessment & Mitigation
-
-**Technical Risks:**
-- Performance impact from advanced features → Continuous benchmarking
-- Plugin security → Sandboxing and validation
-- Complexity creep → Incremental implementation
-
-**Timeline Risks:**
-- Scope creep → Strict phase boundaries
-- Dependency management → Early planning
-- Testing complexity → Automated test suites
+| Phase | หัวข้อ | ระยะเวลา |
+|-------|--------|----------|
+| 8 | Access Chaining | 2 สัปดาห์ |
+| 9 | Lambda & Higher-Order | 3 สัปดาห์ |
+| 10 | User-Defined Functions | 2 สัปดาห์ |
+| 11 | Advanced Data Types | 2 สัปดาห์ |
+| 12 | Serialization & Caching | 1.5 สัปดาห์ |
+| 13 | Plugin SDK | 1.5 สัปดาห์ |
+| 14 | Performance & Optimization | 2 สัปดาห์ |
+| **รวม** | | ~14 สัปดาห์ |
 
 ---
 
-## Success Criteria
+## Success Criteria (Session 2)
 
-- ✅ All phases deliver working, tested code
-- ✅ Performance maintained or improved
-- ✅ Backward compatibility preserved
-- ✅ Documentation complete and accurate
-- ✅ CI/CD pipeline covers all features
-- ✅ Real-world examples demonstrate capabilities
+- ✅ ผู้ใช้สามารถเขียน `user.name`, `arr[0]`, `items[0].price` ได้
+- ✅ Lambda `(x) => x * 2` ทำงานร่วมกับ `map`, `filter`, `reduce`
+- ✅ `fn factorial(n) = ...` ใช้งานได้จริง (recursion, มี limit)
+- ✅ DateTime/Duration ทำงาน native ผ่าน `jiff` โดยไม่มี C dependency
+- ✅ Formula สามารถ cache แล้ว eval ซ้ำได้เร็วขึ้น
+- ✅ Plugin SDK มี trait และ manager ให้ third-party เขียนส่วนขยาย
+- ✅ CI/CD ยังเขียว, `cargo test`, `fmt`, `clippy` ผ่าน
