@@ -1,8 +1,14 @@
 # Formula Engine
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/rust-2021-orange.svg)](https://www.rust-lang.org)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 [![Version](https://img.shields.io/badge/version-0.1.0-green.svg)]()
+[![Build Status](https://github.com/bl1nk-bot/poe-sdk-rs/workflows/CI/badge.svg)](https://github.com/bl1nk-bot/poe-sdk-rs/actions)
+[![Documentation](https://docs.rs/formula_engine/badge.svg)](https://docs.rs/formula_engine)
+[![Crates.io](https://img.shields.io/crates/v/formula_engine.svg)](https://crates.io/crates/formula_engine)
+[![Downloads](https://img.shields.io/crates/d/formula_engine.svg)](https://crates.io/crates/formula_engine)
+[![Code Coverage](https://codecov.io/gh/bl1nk-bot/poe-sdk-rs/branch/main/graph/badge.svg)](https://codecov.io/gh/bl1nk-bot/poe-sdk-rs)
+[![Discord](https://img.shields.io/discord/your-server-id?color=7289DA&label=Discord)](https://discord.gg/your-invite)
 
 ## 📖 ภาพรวม
 
@@ -11,11 +17,13 @@
 ### ✨ คุณสมบัติหลัก
 
 - **Lexer & Parser**: แปลงข้อความสูตรเป็น AST (Abstract Syntax Tree) พร้อมข้อมูลตำแหน่ง (span) สำหรับรายงานข้อผิดพลาดที่แม่นยำ
-- **Evaluator**: ประเมินค่า AST โดยรองรับชนิดข้อมูลพื้นฐาน 4 ประเภท:
+- **Evaluator**: ประเมินค่า AST โดยรองรับชนิดข้อมูลพื้นฐาน 6 ประเภท:
   - `Number` (ตัวเลข)
   - `String` (ข้อความ)
   - `Bool` (ค่าความจริง)
   - `Null` (ค่าว่าง)
+  - `Array` (อาร์เรย์)
+  - `Map` (แมป/พจนานุกรม)
 - **Function System**: ระบบฟังก์ชันที่ขยายได้ รองรับ built-in functions และผู้ใช้สามารถเพิ่มฟังก์ชันใหม่ได้เอง
 - **Context Support**: รองรับตัวแปรและการอ้างอิงค่าจากภายนอก
 - **Error Reporting**: รายงานข้อผิดพลาดอย่างละเอียดพร้อมตำแหน่งบรรทัดและคอลัมน์
@@ -123,6 +131,8 @@ assert_eq!(result, formula_engine::Value::String("สมชาย".to_string()))
 - **String**: ข้อความในเครื่องหมายคำพูด เช่น `"hello"`, `"สวัสดี"`
 - **Bool**: ค่าความจริง `true` หรือ `false`
 - **Null**: ค่าว่าง `null`
+- **Array**: อาร์เรย์ เช่น `[1, 2, 3]`, `["a", "b"]`, `[[1, 2], [3, 4]]`
+- **Map**: แมป เช่น `{name: "John", age: 30}`, `{key: value}`
 
 ### ฟังก์ชัน Built-in
 
@@ -140,13 +150,15 @@ assert_eq!(result, formula_engine::Value::String("สมชาย".to_string()))
 | ฟังก์ชัน | คำอธิบาย | ตัวอย่าง |
 |----------|----------|----------|
 | `abs(num)` | ค่าสัมบูรณ์ | `abs(-5)` → `5` |
+| `min(a, b)` | ค่าน้อยที่สุดระหว่างสองค่า | `min(3, 1)` → `1` |
+| `max(a, b)` | ค่ามากที่สุดระหว่างสองค่า | `max(3, 1)` → `3` |
 
 #### ฟังก์ชันตรรกะ (Logic)
 | ฟังก์ชัน | คำอธิบาย | ตัวอย่าง |
 |----------|----------|----------|
 | `if(condition, true_val, false_val)` | เงื่อนไข | `if(true, 1, 0)` → `1` |
 
-#### ฟังก์ชันคอลเลกชัน (Collection) - *กำลังพัฒนา*
+#### ฟังก์ชันคอลเลกชัน (Collection)
 | ฟังก์ชัน | คำอธิบาย | ตัวอย่าง |
 |----------|----------|----------|
 | `sum(arr)` | ผลรวมของอาร์เรย์ | `sum([1, 2, 3])` → `6` |
@@ -155,6 +167,16 @@ assert_eq!(result, formula_engine::Value::String("สมชาย".to_string()))
 | `max(arr)` | ค่ามากที่สุดในอาร์เรย์ | `max([1, 2, 3])` → `3` |
 | `count(arr)` | นับจำนวนสมาชิก | `count([1, 2, 3])` → `3` |
 | `join(arr, sep)` | ต่อข้อความในอาร์เรย์ | `join(["a","b"], ",")` → `"a,b"` |
+
+#### ฟังก์ชันวันที่ (Date)
+| ฟังก์ชัน | คำอธิบาย | ตัวอย่าง |
+|----------|----------|----------|
+| `now()` | วันที่และเวลาปัจจุบัน (ISO 8601) | `now()` → `"2023-12-01T12:00:00Z"` |
+| `date_add(date, days)` | เพิ่มวันให้วันที่ | `date_add("2023-01-01", 5)` → `"2023-01-06T00:00:00Z"` |
+| `date_diff(date1, date2)` | จำนวนวันระหว่างวันที่ | `date_diff("2023-01-05", "2023-01-01")` → `4` |
+| `year(date)` | ปีจากวันที่ | `year("2023-05-15")` → `2023` |
+| `month(date)` | เดือนจากวันที่ | `month("2023-05-15")` → `5` |
+| `day(date)` | วันที่จากวันที่ | `day("2023-05-15")` → `15` |
 
 ---
 
@@ -209,8 +231,8 @@ formula_engine/
 │       ├── string.rs    # ฟังก์ชันข้อความ
 │       ├── math.rs      # ฟังก์ชันคณิตศาสตร์
 │       ├── logic.rs     # ฟังก์ชันตรรกะ
-│       ├── date.rs      # ฟังก์ชันวันที่ (*กำลังพัฒนา*)
-│       └── collection.rs # ฟังก์ชันคอลเลกชัน (*กำลังพัฒนา*)
+│       ├── date.rs      # ฟังก์ชันวันที่
+│       └── collection.rs # ฟังก์ชันคอลเลกชัน
 ├── docs/                # เอกสารประกอบ
 ├── Cargo.toml
 ├── LICENSE
@@ -235,13 +257,13 @@ formula_engine/
 - [x] Error Reporting: รายงานข้อผิดพลาดพร้อมตำแหน่ง
 - [x] Documentation: Doc-tests และ integration tests
 
-### 🚧 กำลังพัฒนา (Phase 6 - Advanced Features)
+### ✅ เสร็จสมบูรณ์ (Phase 6 - Advanced Features)
 
-- [ ] Array syntax และ evaluation
-- [ ] Map/Dictionary support
-- [ ] Date/Time functions
-- [ ] Additional collection functions
-- [ ] Performance optimization
+- [x] Array syntax และ evaluation
+- [x] Map/Dictionary support
+- [x] Date/Time functions
+- [x] Additional collection functions
+- [ ] Performance optimization (Phase 7)
 
 ### 📋 แผนในอนาคต (Phase 7+)
 

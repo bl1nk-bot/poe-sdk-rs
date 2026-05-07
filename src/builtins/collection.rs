@@ -14,7 +14,7 @@ pub fn sum() -> BuiltinFunction {
             let arr = require_array(&args[0])?;
             let total: f64 = arr
                 .iter()
-                .map(|v| require_number(v))
+                .map(require_number)
                 .sum::<Result<f64, FormulaError>>()?;
             Ok(Value::Number(total))
         },
@@ -39,7 +39,7 @@ pub fn avg() -> BuiltinFunction {
             }
             let total: f64 = arr
                 .iter()
-                .map(|v| require_number(v))
+                .map(require_number)
                 .sum::<Result<f64, FormulaError>>()?;
             Ok(Value::Number(total / arr.len() as f64))
         },
@@ -67,7 +67,13 @@ pub fn min_arr() -> BuiltinFunction {
                 let n = require_number(v)?;
                 min_val = Some(match min_val {
                     None => n,
-                    Some(cur) => if n < cur { n } else { cur },
+                    Some(cur) => {
+                        if n < cur {
+                            n
+                        } else {
+                            cur
+                        }
+                    }
                 });
             }
             Ok(Value::Number(min_val.unwrap()))
@@ -96,7 +102,13 @@ pub fn max_arr() -> BuiltinFunction {
                 let n = require_number(v)?;
                 max_val = Some(match max_val {
                     None => n,
-                    Some(cur) => if n > cur { n } else { cur },
+                    Some(cur) => {
+                        if n > cur {
+                            n
+                        } else {
+                            cur
+                        }
+                    }
                 });
             }
             Ok(Value::Number(max_val.unwrap()))
@@ -113,10 +125,7 @@ pub fn join() -> BuiltinFunction {
         call: |args| {
             let arr = require_array(&args[0])?;
             let sep = require_string(&args[1])?;
-            let parts: Result<Vec<String>, FormulaError> = arr
-                .iter()
-                .map(|v| require_string(v))
-                .collect();
+            let parts: Result<Vec<String>, FormulaError> = arr.iter().map(require_string).collect();
             Ok(Value::String(parts?.join(&sep)))
         },
     }
@@ -178,18 +187,22 @@ mod tests {
     use super::*;
 
     fn call_fn(f: BuiltinFunction, args: Vec<Value>) -> Result<Value, FormulaError> {
-        (f.call)(args)
+        (f.call)(&args)
     }
 
     // -- sum() tests --
 
     #[test]
     fn test_sum_basic() {
-        let result = call_fn(sum(), vec![Value::Array(vec![
-            Value::Number(1.0),
-            Value::Number(2.0),
-            Value::Number(3.0),
-        ])]).unwrap();
+        let result = call_fn(
+            sum(),
+            vec![Value::Array(vec![
+                Value::Number(1.0),
+                Value::Number(2.0),
+                Value::Number(3.0),
+            ])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(6.0));
     }
 
@@ -207,10 +220,11 @@ mod tests {
 
     #[test]
     fn test_sum_with_floats() {
-        let result = call_fn(sum(), vec![Value::Array(vec![
-            Value::Number(1.5),
-            Value::Number(2.5),
-        ])]).unwrap();
+        let result = call_fn(
+            sum(),
+            vec![Value::Array(vec![Value::Number(1.5), Value::Number(2.5)])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(4.0));
     }
 
@@ -225,10 +239,13 @@ mod tests {
 
     #[test]
     fn test_sum_non_number_element() {
-        let result = call_fn(sum(), vec![Value::Array(vec![
-            Value::Number(1.0),
-            Value::String("x".to_string()),
-        ])]);
+        let result = call_fn(
+            sum(),
+            vec![Value::Array(vec![
+                Value::Number(1.0),
+                Value::String("x".to_string()),
+            ])],
+        );
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.kind, ErrorKind::FunctionError);
@@ -237,11 +254,15 @@ mod tests {
 
     #[test]
     fn test_sum_negative_numbers() {
-        let result = call_fn(sum(), vec![Value::Array(vec![
-            Value::Number(-1.0),
-            Value::Number(-2.0),
-            Value::Number(3.0),
-        ])]).unwrap();
+        let result = call_fn(
+            sum(),
+            vec![Value::Array(vec![
+                Value::Number(-1.0),
+                Value::Number(-2.0),
+                Value::Number(3.0),
+            ])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(0.0));
     }
 
@@ -249,11 +270,15 @@ mod tests {
 
     #[test]
     fn test_avg_basic() {
-        let result = call_fn(avg(), vec![Value::Array(vec![
-            Value::Number(10.0),
-            Value::Number(20.0),
-            Value::Number(30.0),
-        ])]).unwrap();
+        let result = call_fn(
+            avg(),
+            vec![Value::Array(vec![
+                Value::Number(10.0),
+                Value::Number(20.0),
+                Value::Number(30.0),
+            ])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(20.0));
     }
 
@@ -282,10 +307,10 @@ mod tests {
 
     #[test]
     fn test_avg_non_number_element() {
-        let result = call_fn(avg(), vec![Value::Array(vec![
-            Value::Number(1.0),
-            Value::Bool(false),
-        ])]);
+        let result = call_fn(
+            avg(),
+            vec![Value::Array(vec![Value::Number(1.0), Value::Bool(false)])],
+        );
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.code, "E006");
@@ -295,11 +320,15 @@ mod tests {
 
     #[test]
     fn test_min_basic() {
-        let result = call_fn(min_arr(), vec![Value::Array(vec![
-            Value::Number(5.0),
-            Value::Number(2.0),
-            Value::Number(8.0),
-        ])]).unwrap();
+        let result = call_fn(
+            min_arr(),
+            vec![Value::Array(vec![
+                Value::Number(5.0),
+                Value::Number(2.0),
+                Value::Number(8.0),
+            ])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(2.0));
     }
 
@@ -311,21 +340,29 @@ mod tests {
 
     #[test]
     fn test_min_all_same_values() {
-        let result = call_fn(min_arr(), vec![Value::Array(vec![
-            Value::Number(3.0),
-            Value::Number(3.0),
-            Value::Number(3.0),
-        ])]).unwrap();
+        let result = call_fn(
+            min_arr(),
+            vec![Value::Array(vec![
+                Value::Number(3.0),
+                Value::Number(3.0),
+                Value::Number(3.0),
+            ])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(3.0));
     }
 
     #[test]
     fn test_min_with_negative() {
-        let result = call_fn(min_arr(), vec![Value::Array(vec![
-            Value::Number(1.0),
-            Value::Number(-5.0),
-            Value::Number(3.0),
-        ])]).unwrap();
+        let result = call_fn(
+            min_arr(),
+            vec![Value::Array(vec![
+                Value::Number(1.0),
+                Value::Number(-5.0),
+                Value::Number(3.0),
+            ])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(-5.0));
     }
 
@@ -348,10 +385,13 @@ mod tests {
 
     #[test]
     fn test_min_non_number_element() {
-        let result = call_fn(min_arr(), vec![Value::Array(vec![
-            Value::Number(1.0),
-            Value::String("bad".to_string()),
-        ])]);
+        let result = call_fn(
+            min_arr(),
+            vec![Value::Array(vec![
+                Value::Number(1.0),
+                Value::String("bad".to_string()),
+            ])],
+        );
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.code, "E006");
@@ -361,11 +401,15 @@ mod tests {
 
     #[test]
     fn test_max_basic() {
-        let result = call_fn(max_arr(), vec![Value::Array(vec![
-            Value::Number(5.0),
-            Value::Number(2.0),
-            Value::Number(8.0),
-        ])]).unwrap();
+        let result = call_fn(
+            max_arr(),
+            vec![Value::Array(vec![
+                Value::Number(5.0),
+                Value::Number(2.0),
+                Value::Number(8.0),
+            ])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(8.0));
     }
 
@@ -377,20 +421,25 @@ mod tests {
 
     #[test]
     fn test_max_all_same_values() {
-        let result = call_fn(max_arr(), vec![Value::Array(vec![
-            Value::Number(7.0),
-            Value::Number(7.0),
-        ])]).unwrap();
+        let result = call_fn(
+            max_arr(),
+            vec![Value::Array(vec![Value::Number(7.0), Value::Number(7.0)])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(7.0));
     }
 
     #[test]
     fn test_max_with_negative() {
-        let result = call_fn(max_arr(), vec![Value::Array(vec![
-            Value::Number(-1.0),
-            Value::Number(-5.0),
-            Value::Number(-3.0),
-        ])]).unwrap();
+        let result = call_fn(
+            max_arr(),
+            vec![Value::Array(vec![
+                Value::Number(-1.0),
+                Value::Number(-5.0),
+                Value::Number(-3.0),
+            ])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(-1.0));
     }
 
@@ -413,10 +462,10 @@ mod tests {
 
     #[test]
     fn test_max_non_number_element() {
-        let result = call_fn(max_arr(), vec![Value::Array(vec![
-            Value::Bool(true),
-            Value::Number(1.0),
-        ])]);
+        let result = call_fn(
+            max_arr(),
+            vec![Value::Array(vec![Value::Bool(true), Value::Number(1.0)])],
+        );
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.code, "E006");
@@ -426,53 +475,69 @@ mod tests {
 
     #[test]
     fn test_join_basic() {
-        let result = call_fn(join(), vec![
-            Value::Array(vec![
-                Value::String("a".to_string()),
-                Value::String("b".to_string()),
-                Value::String("c".to_string()),
-            ]),
-            Value::String(", ".to_string()),
-        ]).unwrap();
+        let result = call_fn(
+            join(),
+            vec![
+                Value::Array(vec![
+                    Value::String("a".to_string()),
+                    Value::String("b".to_string()),
+                    Value::String("c".to_string()),
+                ]),
+                Value::String(", ".to_string()),
+            ],
+        )
+        .unwrap();
         assert_eq!(result, Value::String("a, b, c".to_string()));
     }
 
     #[test]
     fn test_join_empty_array() {
-        let result = call_fn(join(), vec![
-            Value::Array(vec![]),
-            Value::String("-".to_string()),
-        ]).unwrap();
+        let result = call_fn(
+            join(),
+            vec![Value::Array(vec![]), Value::String("-".to_string())],
+        )
+        .unwrap();
         assert_eq!(result, Value::String("".to_string()));
     }
 
     #[test]
     fn test_join_empty_separator() {
-        let result = call_fn(join(), vec![
-            Value::Array(vec![
-                Value::String("x".to_string()),
-                Value::String("y".to_string()),
-            ]),
-            Value::String("".to_string()),
-        ]).unwrap();
+        let result = call_fn(
+            join(),
+            vec![
+                Value::Array(vec![
+                    Value::String("x".to_string()),
+                    Value::String("y".to_string()),
+                ]),
+                Value::String("".to_string()),
+            ],
+        )
+        .unwrap();
         assert_eq!(result, Value::String("xy".to_string()));
     }
 
     #[test]
     fn test_join_single_element() {
-        let result = call_fn(join(), vec![
-            Value::Array(vec![Value::String("only".to_string())]),
-            Value::String("-".to_string()),
-        ]).unwrap();
+        let result = call_fn(
+            join(),
+            vec![
+                Value::Array(vec![Value::String("only".to_string())]),
+                Value::String("-".to_string()),
+            ],
+        )
+        .unwrap();
         assert_eq!(result, Value::String("only".to_string()));
     }
 
     #[test]
     fn test_join_non_array_arg() {
-        let result = call_fn(join(), vec![
-            Value::String("not_array".to_string()),
-            Value::String("-".to_string()),
-        ]);
+        let result = call_fn(
+            join(),
+            vec![
+                Value::String("not_array".to_string()),
+                Value::String("-".to_string()),
+            ],
+        );
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.code, "E006");
@@ -480,13 +545,13 @@ mod tests {
 
     #[test]
     fn test_join_non_string_element() {
-        let result = call_fn(join(), vec![
-            Value::Array(vec![
-                Value::String("a".to_string()),
-                Value::Number(1.0),
-            ]),
-            Value::String("-".to_string()),
-        ]);
+        let result = call_fn(
+            join(),
+            vec![
+                Value::Array(vec![Value::String("a".to_string()), Value::Number(1.0)]),
+                Value::String("-".to_string()),
+            ],
+        );
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.code, "E006");
@@ -494,10 +559,13 @@ mod tests {
 
     #[test]
     fn test_join_non_string_separator() {
-        let result = call_fn(join(), vec![
-            Value::Array(vec![Value::String("a".to_string())]),
-            Value::Number(1.0),
-        ]);
+        let result = call_fn(
+            join(),
+            vec![
+                Value::Array(vec![Value::String("a".to_string())]),
+                Value::Number(1.0),
+            ],
+        );
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.code, "E006");
@@ -507,11 +575,15 @@ mod tests {
 
     #[test]
     fn test_count_basic() {
-        let result = call_fn(count(), vec![Value::Array(vec![
-            Value::Number(1.0),
-            Value::Number(2.0),
-            Value::Number(3.0),
-        ])]).unwrap();
+        let result = call_fn(
+            count(),
+            vec![Value::Array(vec![
+                Value::Number(1.0),
+                Value::Number(2.0),
+                Value::Number(3.0),
+            ])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(3.0));
     }
 
@@ -524,12 +596,16 @@ mod tests {
     #[test]
     fn test_count_mixed_types() {
         // count does not validate element types, just counts
-        let result = call_fn(count(), vec![Value::Array(vec![
-            Value::Number(1.0),
-            Value::String("a".to_string()),
-            Value::Bool(true),
-            Value::Null,
-        ])]).unwrap();
+        let result = call_fn(
+            count(),
+            vec![Value::Array(vec![
+                Value::Number(1.0),
+                Value::String("a".to_string()),
+                Value::Bool(true),
+                Value::Null,
+            ])],
+        )
+        .unwrap();
         assert_eq!(result, Value::Number(4.0));
     }
 

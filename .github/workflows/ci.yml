@@ -1,48 +1,121 @@
-# .github/workflows/ci.yml
+# Formula Engine CI/CD Pipeline
 name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check:
-    name: Rust (fmt + clippy + test)
+  # Primary CI job - comprehensive testing
+  test:
+    name: Test Suite
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - stable
+          - beta
+          - 1.70.0  # MSRV (Minimum Supported Rust Version)
+
     steps:
-      # 1. Checkout โค้ด
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # 2. Cache dependencies เพื่อความรวดเร็ว
-      - uses: actions/cache@v4
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      # 3. ติดตั้ง Rust stable
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
+          toolchain: ${{ matrix.rust }}
           components: rustfmt, clippy
 
-      # 4. ตรวจสอบการจัดรูปแบบโค้ด (ถ้าไม่ตรงจะ fail)
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Ensure latest Rust
+        run: rustup update stable
+
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      # 5. ตรวจสอบด้วย Clippy (warnings ทั้งหมดจะถูกมองเป็น error)
-      - name: Clippy lint
+      - name: Run clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-      # 6. รันการทดสอบทั้งหมด (รวม unit, integration, doc-tests)
       - name: Run tests
         run: cargo test --verbose
+
+      - name: Run doc tests
+        run: cargo test --doc
+
+      - name: Run benchmarks
+        run: cargo bench
+
+      - name: Generate documentation
+        run: cargo doc --no-deps --document-private-items
+
+  # Test examples separately for better visibility
+  examples:
+    name: Test Examples
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Ensure latest Rust
+        run: rustup update stable
+
+      - name: Test basic example
+        run: cargo run --example basic
+
+      - name: Test advanced example
+        run: cargo run --example advanced
+
+  # Test snapshot updates (only on main branch)
+  snapshots:
+    name: Update Snapshots
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Ensure latest Rust
+        run: rustup update stable
+
+      - name: Test and update snapshots
+        run: cargo test --test error_snapshots
+        env:
+          INSTA_UPDATE: 1
+
+  # Security audit (optional, can be enabled later)
+  # audit:
+  #   name: Security Audit
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       - uses: actions/checkout@v4
+  #     - name: Install cargo-audit
+  #       run: cargo install cargo-audit
+  #     - name: Run audit
+  #       run: cargo audit

@@ -6,7 +6,11 @@ use crate::span::Span;
 use crate::value::Value;
 
 /// ประเมินผล SpannedExpr แล้วคืน Value
-pub fn evaluate(expr: &SpannedExpr, ctx: &Context, registry: &FunctionRegistry) -> Result<Value, FormulaError> {
+pub fn evaluate(
+    expr: &SpannedExpr,
+    ctx: &Context,
+    registry: &FunctionRegistry,
+) -> Result<Value, FormulaError> {
     let span = expr.meta.span;
     match &expr.expr {
         Expr::Literal(val) => Ok(val.clone()),
@@ -73,6 +77,14 @@ pub fn evaluate(expr: &SpannedExpr, ctx: &Context, registry: &FunctionRegistry) 
                 .collect();
             Ok(Value::Array(values?))
         }
+        Expr::MapLiteral(pairs) => {
+            let mut map = std::collections::HashMap::new();
+            for (key, expr) in pairs {
+                let value = evaluate(expr, ctx, registry)?;
+                map.insert(key.clone(), value);
+            }
+            Ok(Value::Map(map))
+        }
         Expr::FunctionCall { name, args } => {
             let func = registry.find(name).ok_or_else(|| {
                 FormulaError::new(
@@ -137,7 +149,12 @@ fn mul_values(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
     if let (Value::Number(a), Value::Number(b)) = (&l, &r) {
         Ok(Value::Number(a * b))
     } else {
-        Err(FormulaError::new(ErrorKind::TypeError, "E006", "ใช้กับตัวเลข", Some(span)))
+        Err(FormulaError::new(
+            ErrorKind::TypeError,
+            "E006",
+            "ใช้กับตัวเลข",
+            Some(span),
+        ))
     }
 }
 
@@ -154,7 +171,12 @@ fn div_values(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
             Ok(Value::Number(a / b))
         }
     } else {
-        Err(FormulaError::new(ErrorKind::TypeError, "E006", "ใช้กับตัวเลข", Some(span)))
+        Err(FormulaError::new(
+            ErrorKind::TypeError,
+            "E006",
+            "ใช้กับตัวเลข",
+            Some(span),
+        ))
     }
 }
 

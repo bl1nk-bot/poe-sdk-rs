@@ -59,9 +59,9 @@ Layer 2: Lexing ✅
 
 แปลง string → token stream
 
-ตัวอย่าง token (เพิ่ม Null, True, False จากสเปกเดิม):
+ตัวอย่าง token (เพิ่ม Null, True, False, Array/Map จาก Phase 6):
 
-· Identifier, Number, String, LParen, RParen, Comma
+· Identifier, Number, String, LParen, RParen, Comma, LBracket, RBracket, LBrace, RBrace, Colon
 · Operator: Plus, Minus, Star, Slash, Bang, AndAnd, OrOr, EqEq, NotEq, Lt, Gt, LtEq, GtEq
 · Keyword: True, False, Null
 · Eof
@@ -86,12 +86,14 @@ AST เป็น tree ของ SpannedExpr (Expr + Span)
 
 ตัวอย่างโหนด (Expr enum):
 
-· Literal(Value)          // รองรับ Number, String, Bool, Null
+· Literal(Value)          // รองรับ Number, String, Bool, Null, Array, Map
 · Variable(String)
 · UnaryExpr { op, expr }  // op: Neg(-), Not(!)
 · BinaryExpr { left, op, right } // op: +, -, *, /, ==, !=, <, >, <=, >=, &&, ||
 · FunctionCall { name, args }
 · Grouping(Box<SpannedExpr>)
+· ArrayLiteral(Vec<SpannedExpr>)  // [elem1, elem2, ...]
+· MapLiteral(Vec<(String, SpannedExpr)>)  // {key1: val1, key2: val2, ...}
 
 หน้าที่ของ parser (ที่ implement แล้ว)
 
@@ -173,7 +175,7 @@ Layer 7: Built-in Function Registry ✅ (เกินแผน)
 
 เก็บฟังก์ชันพร้อม signature และ implementation
 
-ฟังก์ชันที่มี (10 ตัว):
+ฟังก์ชันที่มี (23 ตัว):
 
 · if(cond, a, b) – logic
 · len(text) – string
@@ -183,8 +185,18 @@ Layer 7: Built-in Function Registry ✅ (เกินแผน)
 · starts_with(text, pattern) – string
 · ends_with(text, pattern) – string
 · abs(number) – math
-· min(a, b) – math
-· max(a, b) – math
+· min(a, b) – math (เดิม), min(array) – collection
+· max(a, b) – math (เดิม), max(array) – collection
+· sum(array) – collection
+· avg(array) – collection
+· join(array, separator) – collection
+· count(array) – collection
+· now() – date
+· date_add(date_str, days) – date
+· date_diff(date1, date2) – date
+· year(date_str) – date
+· month(date_str) – date
+· day(date_str) – date
 
 Registry ใช้ HashMap<String, BuiltinFunction>
 
@@ -242,7 +254,7 @@ src/
     string.rs          # len, upper, lower, contains, starts_with, ends_with
     math.rs            # abs, min, max
     logic.rs           # if_fn
-    date.rs            # (empty, รอ Phase 6)
+    date.rs            # now, date_add, date_diff, year, month, day
 ```
 
 ---
@@ -253,7 +265,7 @@ A. Syntax Spec (grammar ที่ parser รองรับ)
 
 Expression types
 
-· literals: Number, String, Bool (true, false), Null (null)
+· literals: Number, String, Bool (true, false), Null (null), Array ([elem1, elem2, ...]), Map ({key1: val1, key2: val2, ...})
 · variables: identifiers (เช่น score)
 · unary operators: - (Neg), ! (Not)
 · binary operators: +, -, *, /, ==, !=, <, >, <=, >=, &&, ||
@@ -284,11 +296,11 @@ Phase 1 (implemented)
 · Bool(bool)
 · Null
 
-Phase 2 (ยังไม่ได้ทำ)
+Phase 6 (implemented)
 
-· Array(Vec<Value>)
-· DateTime
-· Object/Map
+· Array(Vec<Value>) ✅
+· Map(HashMap<String, Value>) ✅
+· DateTime (ผ่าน String ISO 8601) ✅
 
 ---
 

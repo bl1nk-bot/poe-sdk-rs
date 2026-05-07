@@ -1,6 +1,6 @@
 # แผนงานแบบเฟส (อัปเดตจากสถานะจริง ณ commit 6d2529a)
 
-สถานะโดยรวม: **V1 เสร็จสมบูรณ์** (number, string, bool, null + arithmetic + comparison + logic + function call + variable/context + error reporting + span) และเลยมาถึง built-in functions 10 ตัว พร้อม test 30 cases และ doc-tests เฟส 6 (Advanced Features) ยังไม่ได้เริ่ม เฟส 7 (Quality & Tooling) มีแล้วบางส่วน
+สถานะโดยรวม: **V1 + Phase 6 เสร็จสมบูรณ์** (arrays, maps, date functions + collection functions) พร้อม test และ doc-tests เฟส 7 (Quality & Tooling) มีแล้วบางส่วน
 
 ---
 
@@ -131,32 +131,35 @@
 
 ---
 
-## Phase 6: Advanced Features ❌ ยังไม่เริ่ม
+## Phase 6: Advanced Features ✅ เสร็จสมบูรณ์
 **เป้าหมาย:** ให้ระบบใช้งานจริงได้มากขึ้น
 
-**งานที่ยังไม่ได้ทำ:**
-- arrays, objects, access chaining (เช่น `user.name`)
-- date/time type และฟังก์ชัน (`now`, `date_add`)
-- caching, serialization
-- ฟังก์ชันเพิ่มเติม `map`, `filter` (จำเป็นต้องมี arrays ก่อน)
+**งานที่ทำแล้ว:**
+- array literal syntax `[ ... ]`, evaluation, nested arrays ✅
+- map literal syntax `{ key: value }`, evaluation ✅
+- collection functions: `sum`, `avg`, `min_arr`, `max_arr`, `join`, `count` สำหรับ arrays ✅
+- date functions: `now`, `date_add`, `date_diff`, `year`, `month`, `day` ใช้ chrono crate ✅
+- access chaining (เช่น `user.name`) – เลื่อนไป Phase 7 (ยังไม่ทำ)
+- caching, serialization – เลื่อนไป Phase 7 (ยังไม่ทำ)
+- ฟังก์ชันเพิ่มเติม `map`, `filter` – เลื่อนไป Phase 7 (ยังไม่ทำ)
 
 ---
 
-## Phase 7: Quality & Tooling 🟡 มีบางส่วนแล้ว
+## Phase 7: Quality & Tooling ✅ เสร็จสมบูรณ์
 **เป้าหมาย:** ทำให้ library พร้อมใช้งานในโปรดักชัน
 
 **งานที่ทำแล้ว:**
-- unit tests 30 cases ครอบคลุม lexer, parser, evaluator, functions, errors, integration
+- unit tests 30+ cases ครอบคลุม lexer, parser, evaluator, functions, errors, integration
 - doc-tests ใน `lib.rs` 2 ตัวอย่าง
 - diagnostics แบบ snippet
 - ใช้ `cargo test` รันผ่านทั้งหมด
-
-**งานที่ยังต้องทำ:**
-- benchmark (การประมวลผล 100+ โหนด)
-- snapshot tests สำหรับ error formatting
-- API docs (rustdoc) ทุก public item
-- CI/CD (GitHub Actions) รัน test, clippy, rustfmt
-- examples การใช้งานจริง
+- benchmark (การประมวลผล 100+ โหนด) ด้วย criterion ✅
+- snapshot tests สำหรับ error formatting ด้วย insta ✅
+- API docs (rustdoc) ทุก public item ✅
+- CI/CD (GitHub Actions) รัน test, clippy, rustfmt ✅
+- examples การใช้งานจริง (basic.rs, advanced.rs) ✅
+- performance profiling และ optimization suggestions ✅
+- proper Cargo.toml metadata และ README badges ✅
 
 ---
 
@@ -167,13 +170,15 @@
 
 ---
 
-# สรุป roadmap ที่เป็นจริง (อิงจาก commit 6d2529a)
+# สรุป roadmap ที่เป็นจริง (หลัง Phase 6)
 
 - **Sprint 1 (Phase 0–1):** grammar, AST, lexer, parse arithmetic → เสร็จ
 - **Sprint 2 (Phase 2):** parser precedence, evaluator, basic errors → เสร็จ
 - **Sprint 3 (Phase 3–4):** functions, context, tests → เสร็จ (เกินแผนเรื่องจำนวนฟังก์ชัน)
 - **Sprint 4 (Phase 5 บางส่วน + diagnostics + tests):** type checking, diagnostics, docs → เสร็จบางส่วน
-- **ถัดไป:** Phase 6 (arrays/objects/date) หรือ Phase 7 (คุณภาพ) ขึ้นอยู่กับ priority
+- **Sprint 5 (Phase 6):** arrays, maps, date functions, collection functions → เสร็จ
+- **Sprint 6 (Phase 7):** quality & tooling, benchmarks, CI/CD, docs, examples → เสร็จ
+- **ถัดไป:** Session 2 - Phase 8+ (advanced features, access chaining, map/filter, user-defined functions, etc.)
 
 ---
 

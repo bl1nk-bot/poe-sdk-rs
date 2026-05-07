@@ -3,31 +3,34 @@ use crate::span::{Position, Span};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
-    Identifier,   // ชื่อตัวแปร, ฟังก์ชัน
-    Number,       // ตัวเลข
-    String,       // ข้อความใน "..."
-    LParen,       // (
-    RParen,       // )
-    Comma,        // ,
-    Plus,         // +
-    Minus,        // -
-    Star,         // *
-    Slash,        // /
-    Bang,         // !
-    AndAnd,       // &&
-    OrOr,         // ||
-    EqEq,         // ==
-    NotEq,        // !=
-    Lt,           // <
-    Gt,           // >
-    LtEq,         // <=
-    GtEq,         // >=
-    True,         // true
-    False,        // false
-    Null,         // null
+    Identifier, // ชื่อตัวแปร, ฟังก์ชัน
+    Number,     // ตัวเลข
+    String,     // ข้อความใน "..."
+    LParen,     // (
+    RParen,     // )
+    Comma,      // ,
+    Plus,       // +
+    Minus,      // -
+    Star,       // *
+    Slash,      // /
+    Bang,       // !
+    AndAnd,     // &&
+    OrOr,       // ||
+    EqEq,       // ==
+    NotEq,      // !=
+    Lt,         // <
+    Gt,         // >
+    LtEq,       // <=
+    GtEq,       // >=
+    True,       // true
+    False,      // false
+    Null,       // null
     LBracket,   // [
     RBracket,   // ]
-    Eof,          // end of file
+    LBrace,     // {
+    RBrace,     // }
+    Colon,      // :
+    Eof,        // end of file
 }
 
 #[derive(Debug, Clone)]
@@ -40,18 +43,16 @@ pub struct Token {
 /// Lexer struct เก็บสถานะการอ่าน
 struct Lexer<'a> {
     source: &'a str,
-    chars: std::str::Chars<'a>, // iterator ของ characters
-    pos: usize,                // ตำแหน่ง byte ใน source
-    line: usize,               // บรรทัดปัจจุบัน (เริ่มที่ 1)
-    col: usize,                // คอลัมน์ปัจจุบัน (เริ่มที่ 1)
-    tokens: Vec<Token>,        // token ที่อ่านได้แล้ว
+    pos: usize,         // ตำแหน่ง byte ใน source
+    line: usize,        // บรรทัดปัจจุบัน (เริ่มที่ 1)
+    col: usize,         // คอลัมน์ปัจจุบัน (เริ่มที่ 1)
+    tokens: Vec<Token>, // token ที่อ่านได้แล้ว
 }
 
 impl<'a> Lexer<'a> {
     fn new(source: &'a str) -> Self {
         Self {
             source,
-            chars: source.chars(),
             pos: 0,
             line: 1,
             col: 1,
@@ -82,8 +83,14 @@ impl<'a> Lexer<'a> {
     /// สร้าง Span จากตำแหน่งที่บันทึกไว้
     fn make_span(&self, start_line: usize, start_col: usize) -> Span {
         Span {
-            start: Position { line: start_line, column: start_col },
-            end: Position { line: self.line, column: self.col },
+            start: Position {
+                line: start_line,
+                column: start_col,
+            },
+            end: Position {
+                line: self.line,
+                column: self.col,
+            },
         }
     }
 
@@ -100,7 +107,7 @@ impl<'a> Lexer<'a> {
         let mut lexeme = String::new();
         lexeme.push(first);
         self.advance(); // เลื่อนไปหลัง first
-        // เดินหน้าต่อไปตราบใดเป็นตัวอักษร ตัวเลข หรือ '_'
+                        // เดินหน้าต่อไปตราบใดเป็นตัวอักษร ตัวเลข หรือ '_'
         while let Some(c) = self.peek() {
             if c.is_alphanumeric() || c == '_' {
                 lexeme.push(c);
@@ -191,42 +198,50 @@ impl<'a> Lexer<'a> {
                     self.advance();
                 }
                 '(' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     self.push_token(TokenKind::LParen, "(".to_string(), sl, sc);
                 }
                 ')' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     self.push_token(TokenKind::RParen, ")".to_string(), sl, sc);
                 }
                 ',' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     self.push_token(TokenKind::Comma, ",".to_string(), sl, sc);
                 }
                 '+' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     self.push_token(TokenKind::Plus, "+".to_string(), sl, sc);
                 }
                 '-' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     self.push_token(TokenKind::Minus, "-".to_string(), sl, sc);
                 }
                 '*' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     self.push_token(TokenKind::Star, "*".to_string(), sl, sc);
                 }
                 '/' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     self.push_token(TokenKind::Slash, "/".to_string(), sl, sc);
                 }
                 '!' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     if self.peek() == Some('=') {
                         self.advance();
@@ -236,7 +251,8 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 '=' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     if self.peek() == Some('=') {
                         self.advance();
@@ -251,7 +267,8 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 '<' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     if self.peek() == Some('=') {
                         self.advance();
@@ -261,7 +278,8 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 '>' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     if self.peek() == Some('=') {
                         self.advance();
@@ -271,7 +289,8 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 '&' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     if self.peek() == Some('&') {
                         self.advance();
@@ -286,7 +305,8 @@ impl<'a> Lexer<'a> {
                     }
                 }
                 '|' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     if self.peek() == Some('|') {
                         self.advance();
@@ -304,14 +324,34 @@ impl<'a> Lexer<'a> {
                     self.scan_string()?;
                 }
                 '[' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     self.push_token(TokenKind::LBracket, "[".to_string(), sl, sc);
                 }
                 ']' => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     self.advance();
                     self.push_token(TokenKind::RBracket, "]".to_string(), sl, sc);
+                }
+                '{' => {
+                    let sl = self.line;
+                    let sc = self.col;
+                    self.advance();
+                    self.push_token(TokenKind::LBrace, "{".to_string(), sl, sc);
+                }
+                '}' => {
+                    let sl = self.line;
+                    let sc = self.col;
+                    self.advance();
+                    self.push_token(TokenKind::RBrace, "}".to_string(), sl, sc);
+                }
+                ':' => {
+                    let sl = self.line;
+                    let sc = self.col;
+                    self.advance();
+                    self.push_token(TokenKind::Colon, ":".to_string(), sl, sc);
                 }
                 c if c.is_alphabetic() || c == '_' => {
                     self.scan_identifier(c);
@@ -320,7 +360,8 @@ impl<'a> Lexer<'a> {
                     self.scan_number(c);
                 }
                 _ => {
-                    let sl = self.line; let sc = self.col;
+                    let sl = self.line;
+                    let sc = self.col;
                     return Err(FormulaError::new(
                         ErrorKind::LexError,
                         "E001",
@@ -502,6 +543,56 @@ mod tests {
                 TokenKind::Number,
                 TokenKind::RBracket,
                 TokenKind::RParen,
+                TokenKind::Eof,
+            ]
+        );
+    }
+
+    // -- Tests for Map literal tokens (added in Phase 6.2) --
+
+    #[test]
+    fn test_lbrace_token() {
+        let tokens = tokenize("{").unwrap();
+        assert_eq!(tokens[0].kind, TokenKind::LBrace);
+        assert_eq!(tokens[0].lexeme, "{");
+    }
+
+    #[test]
+    fn test_rbrace_token() {
+        let tokens = tokenize("}").unwrap();
+        assert_eq!(tokens[0].kind, TokenKind::RBrace);
+        assert_eq!(tokens[0].lexeme, "}");
+    }
+
+    #[test]
+    fn test_colon_token() {
+        let tokens = tokenize(":").unwrap();
+        assert_eq!(tokens[0].kind, TokenKind::Colon);
+        assert_eq!(tokens[0].lexeme, ":");
+    }
+
+    #[test]
+    fn test_empty_map_braces() {
+        let tokens = tokenize("{}").unwrap();
+        let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind.clone()).collect();
+        assert_eq!(
+            kinds,
+            vec![TokenKind::LBrace, TokenKind::RBrace, TokenKind::Eof]
+        );
+    }
+
+    #[test]
+    fn test_map_with_key_value_tokens() {
+        let tokens = tokenize("{key: \"value\"}").unwrap();
+        let kinds: Vec<TokenKind> = tokens.iter().map(|t| t.kind.clone()).collect();
+        assert_eq!(
+            kinds,
+            vec![
+                TokenKind::LBrace,
+                TokenKind::Identifier,
+                TokenKind::Colon,
+                TokenKind::String,
+                TokenKind::RBrace,
                 TokenKind::Eof,
             ]
         );

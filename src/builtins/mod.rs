@@ -1,11 +1,11 @@
 //! ฟังก์ชันพื้นฐาน (built-in functions)
 //! แต่ละกลุ่มแยกเป็นไฟล์: string, math, logic, date
 
-pub mod string;
-pub mod math;
-pub mod logic;
+pub mod collection;
 pub mod date;
-pub mod collection;   // เพิ่ม
+pub mod logic;
+pub mod math;
+pub mod string; // เพิ่ม
 
 use crate::functions::FunctionRegistry;
 
@@ -32,4 +32,13 @@ pub fn register_all(registry: &mut FunctionRegistry) {
     registry.register(collection::max_arr());
     registry.register(collection::join());
     registry.register(collection::count());
+
+    // ฟังก์ชัน date (Phase 6.3)
+    registry.register(date::now());
+    registry.register(date::date_add());
+    registry.register(date::date());
+    registry.register(date::date_diff());
+    registry.register(date::year());
+    registry.register(date::month());
+    registry.register(date::day());
 }
