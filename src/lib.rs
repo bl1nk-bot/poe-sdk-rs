@@ -142,7 +142,6 @@ pub use value::Value;
 /// let tokens = tokenize("1 + 2 * 3").unwrap();
 /// assert_eq!(tokens.len(), 5); // 3 numbers, 2 operators, 1 EOF
 /// ```
-pub use lexer::tokenize;
 
 /// Parses a sequence of tokens into an Abstract Syntax Tree (AST).
 ///
@@ -163,7 +162,6 @@ pub use lexer::tokenize;
 /// let ast = parse(&tokens).unwrap();
 /// // AST represents (1 + (2 * 3))
 /// ```
-pub use parser::parse;
 
 /// Evaluates an AST using the provided context and function registry.
 ///
@@ -195,7 +193,6 @@ pub use parser::parse;
 /// let result = evaluate(&ast, &ctx, &registry).unwrap();
 /// assert_eq!(result, Value::Number(95.0));
 /// ```
-pub use eval::evaluate;
 
 #[cfg(test)]
 mod integration_tests {

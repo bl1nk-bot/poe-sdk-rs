@@ -3,7 +3,7 @@
 use crate::error::{ErrorKind, FormulaError};
 use crate::functions::BuiltinFunction;
 use crate::value::Value;
-use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
+use chrono::{DateTime, Datelike, Duration, NaiveDate, Utc};
 
 /// now() -> String
 /// คืนวันที่และเวลาปัจจุบันในรูปแบบ ISO 8601
@@ -32,7 +32,7 @@ pub fn date_add() -> BuiltinFunction {
                 .or_else(|_| {
                     // ลอง parse เป็น date เฉยๆ (YYYY-MM-DD)
                     NaiveDate::parse_from_str(&date_str, "%Y-%m-%d")
-                        .map(|d| d.and_hms(0, 0, 0).and_utc())
+                        .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc())
                 })
                 .map_err(|_| {
                     FormulaError::new(
@@ -138,16 +138,22 @@ fn require_number(value: &Value) -> Result<f64, FormulaError> {
 
 fn parse_date(date_str: &str) -> Result<DateTime<Utc>, FormulaError> {
     DateTime::parse_from_rfc3339(date_str)
+        .map(|dt| dt.with_timezone(&Utc))
         .or_else(|_| {
-            NaiveDate::parse_from_str(date_str, "%Y-%m-%d").map(|d| d.and_hms(0, 0, 0).and_utc())
+            NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+                .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc())
+                .map_err(|e| {
+                    FormulaError::new(ErrorKind::FunctionError, "E010", "รูปแบบวันที่ไม่ถูกต้อง", None)
+                })
         })
-        .map_err(|_| {
-            FormulaError::new(
+        .or_else(|_| {
+            // fallback อื่น ๆ ถ้ามี
+            Err(FormulaError::new(
                 ErrorKind::FunctionError,
-                "E012",
-                "รูปแบบวันที่ไม่ถูกต้อง ต้องเป็น ISO 8601 หรือ YYYY-MM-DD",
+                "E010",
+                "ไม่สามารถแปลงวันที่",
                 None,
-            )
+            ))
         })
 }
 
