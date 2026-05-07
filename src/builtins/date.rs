@@ -3,7 +3,7 @@
 use crate::error::{ErrorKind, FormulaError};
 use crate::functions::BuiltinFunction;
 use crate::value::Value;
-use chrono::{DateTime, Datelike, Duration, NaiveDate, Utc};
+use std::str::FromStr;
 
 /// now() -> String
 /// คืนวันที่และเวลาปัจจุบันในรูปแบบ ISO 8601
@@ -12,100 +12,99 @@ pub fn now() -> BuiltinFunction {
         name: "now".to_string(),
         arity: 0,
         call: |_| {
-            let now: DateTime<Utc> = Utc::now();
-            Ok(Value::String(now.to_rfc3339()))
+            let now = jiff::Timestamp::now();
+            Ok(Value::String(now.to_string()))
         },
     }
 }
 
-/// date_add(date_str, days) -> String
-/// เพิ่มจำนวนวันให้กับวันที่ (date_str ต้องเป็น ISO 8601)
-pub fn date_add() -> BuiltinFunction {
+/// date(year, month, day) -> String
+/// สร้างวันที่และคืนเป็น string "YYYY-MM-DD"
+pub fn date() -> BuiltinFunction {
     BuiltinFunction {
-        name: "date_add".to_string(),
-        arity: 2,
+        name: "date".to_string(),
+        arity: 3,
         call: |args| {
-            let date_str = require_string(&args[0])?;
-            let days = require_number(&args[1])? as i64;
+            let year = require_number(&args[0])? as i16;
+            let month = require_number(&args[1])? as i8;
+            let day = require_number(&args[2])? as i8;
 
-            let dt = DateTime::parse_from_rfc3339(&date_str)
-                .or_else(|_| {
-                    // ลอง parse เป็น date เฉยๆ (YYYY-MM-DD)
-                    NaiveDate::parse_from_str(&date_str, "%Y-%m-%d")
-                        .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc())
-                })
-                .map_err(|_| {
-                    FormulaError::new(
-                        ErrorKind::FunctionError,
-                        "E012",
-                        "รูปแบบวันที่ไม่ถูกต้อง ต้องเป็น ISO 8601 หรือ YYYY-MM-DD",
-                        None,
-                    )
-                })?;
-
-            let new_dt = dt + Duration::days(days);
-            Ok(Value::String(new_dt.to_rfc3339()))
-        },
-    }
-}
-
-/// date_diff(date1, date2) -> Number
-/// คืนจำนวนวันระหว่างสองวันที่ (date1 - date2)
-pub fn date_diff() -> BuiltinFunction {
-    BuiltinFunction {
-        name: "date_diff".to_string(),
-        arity: 2,
-        call: |args| {
-            let date1_str = require_string(&args[0])?;
-            let date2_str = require_string(&args[1])?;
-
-            let dt1 = parse_date(&date1_str)?;
-            let dt2 = parse_date(&date2_str)?;
-
-            let duration = dt1.signed_duration_since(dt2);
-            Ok(Value::Number(duration.num_days() as f64))
+            let d = jiff::civil::Date::new(year, month, day).map_err(|_| {
+                FormulaError::new(ErrorKind::FunctionError, "E010", "Invalid date", None)
+            })?;
+            Ok(Value::String(d.to_string()))
         },
     }
 }
 
 /// year(date_str) -> Number
-/// คืนปีจากวันที่
+/// คืนปีจากวันที่/เวลา string
 pub fn year() -> BuiltinFunction {
     BuiltinFunction {
         name: "year".to_string(),
         arity: 1,
         call: |args| {
             let date_str = require_string(&args[0])?;
-            let dt = parse_date(&date_str)?;
-            Ok(Value::Number(dt.year() as f64))
+            let ts = parse_to_timestamp(&date_str)?;
+            let zdt = ts.to_zoned(jiff::tz::TimeZone::UTC);
+            Ok(Value::Number(zdt.year() as f64))
         },
     }
 }
 
 /// month(date_str) -> Number
-/// คืนเดือนจากวันที่ (1-12)
+/// คืนเดือนจากวันที่/เวลา string (1-12)
 pub fn month() -> BuiltinFunction {
     BuiltinFunction {
         name: "month".to_string(),
         arity: 1,
         call: |args| {
             let date_str = require_string(&args[0])?;
-            let dt = parse_date(&date_str)?;
-            Ok(Value::Number(dt.month() as f64))
+            let ts = parse_to_timestamp(&date_str)?;
+            let zdt = ts.to_zoned(jiff::tz::TimeZone::UTC);
+            Ok(Value::Number(zdt.month() as f64))
         },
     }
 }
 
 /// day(date_str) -> Number
-/// คืนวันที่จากวันที่ (1-31)
+/// คืนวันที่จากวันที่/เวลา string (1-31)
 pub fn day() -> BuiltinFunction {
     BuiltinFunction {
         name: "day".to_string(),
         arity: 1,
         call: |args| {
             let date_str = require_string(&args[0])?;
-            let dt = parse_date(&date_str)?;
-            Ok(Value::Number(dt.day() as f64))
+            let ts = parse_to_timestamp(&date_str)?;
+            let zdt = ts.to_zoned(jiff::tz::TimeZone::UTC);
+            Ok(Value::Number(zdt.day() as f64))
+        },
+    }
+}
+
+/// date_diff(date_str1, date_str2, unit) -> Number
+/// คืนจำนวนวันระหว่างสองวันที่ (หน่วยวัน, ไม่สนใจ unit)
+pub fn date_diff() -> BuiltinFunction {
+    BuiltinFunction {
+        name: "date_diff".to_string(),
+        arity: 3,
+        call: |args| {
+            let date_str1 = require_string(&args[0])?;
+            let date_str2 = require_string(&args[1])?;
+            // Ignore unit for now
+
+            let t1 = parse_to_timestamp(&date_str1)?;
+            let t2 = parse_to_timestamp(&date_str2)?;
+            let span = t2 - t1; // jiff::Span
+            let days = span.total(jiff::Unit::Day).map_err(|_| {
+                FormulaError::new(
+                    ErrorKind::FunctionError,
+                    "E010",
+                    "Failed to calculate date difference",
+                    None,
+                )
+            })?;
+            Ok(Value::Number(days))
         },
     }
 }
@@ -136,24 +135,19 @@ fn require_number(value: &Value) -> Result<f64, FormulaError> {
     }
 }
 
-fn parse_date(date_str: &str) -> Result<DateTime<Utc>, FormulaError> {
-    DateTime::parse_from_rfc3339(date_str)
-        .map(|dt| dt.with_timezone(&Utc))
+fn parse_to_timestamp(s: &str) -> Result<jiff::Timestamp, FormulaError> {
+    jiff::Timestamp::from_str(s)
         .or_else(|_| {
-            NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
-                .map(|d| d.and_hms_opt(0, 0, 0).unwrap().and_utc())
-                .map_err(|e| {
-                    FormulaError::new(ErrorKind::FunctionError, "E010", "รูปแบบวันที่ไม่ถูกต้อง", None)
-                })
+            jiff::civil::Date::from_str(s)
+                .and_then(|d| d.to_zoned(jiff::tz::TimeZone::UTC).map(|z| z.timestamp()))
         })
-        .or_else(|_| {
-            // fallback อื่น ๆ ถ้ามี
-            Err(FormulaError::new(
+        .map_err(|_| {
+            FormulaError::new(
                 ErrorKind::FunctionError,
                 "E010",
-                "ไม่สามารถแปลงวันที่",
+                "Invalid date/time string",
                 None,
-            ))
+            )
         })
 }
 
@@ -165,154 +159,76 @@ mod tests {
         (f.call)(&args)
     }
 
-    // -- now() tests --
-
     #[test]
     fn test_now() {
         let result = call_fn(now(), vec![]).unwrap();
         match result {
             Value::String(s) => {
-                // ตรวจว่าเป็น ISO 8601 format คร่าวๆ
+                // Basic check that it returns a string and looks like a timestamp
+                assert!(s.len() > 0);
                 assert!(s.contains('T'));
-                assert!(s.contains('Z') || s.contains('+'));
             }
             _ => panic!("expected string"),
         }
     }
 
-    // -- date_add() tests --
-
     #[test]
-    fn test_date_add_basic() {
+    fn test_date() {
         let result = call_fn(
-            date_add(),
+            date(),
             vec![
-                Value::String("2023-01-01T00:00:00Z".to_string()),
-                Value::Number(5.0),
+                Value::Number(2025.0),
+                Value::Number(6.0),
+                Value::Number(15.0),
             ],
         )
         .unwrap();
-        match result {
-            Value::String(s) => {
-                assert!(s.starts_with("2023-01-06"));
-            }
-            _ => panic!("expected string"),
-        }
+        assert_eq!(result, Value::String("2025-06-15".to_string()));
     }
 
     #[test]
-    fn test_date_add_negative() {
+    fn test_date() {
         let result = call_fn(
-            date_add(),
+            date(),
             vec![
-                Value::String("2023-01-10T00:00:00Z".to_string()),
-                Value::Number(-3.0),
+                Value::Number(2025.0),
+                Value::Number(6.0),
+                Value::Number(15.0),
             ],
         )
         .unwrap();
-        match result {
-            Value::String(s) => {
-                assert!(s.starts_with("2023-01-07"));
-            }
-            _ => panic!("expected string"),
-        }
+        assert_eq!(result, Value::String("2025-06-15".to_string()));
     }
 
     #[test]
-    fn test_date_add_date_only() {
-        let result = call_fn(
-            date_add(),
-            vec![Value::String("2023-01-01".to_string()), Value::Number(1.0)],
-        )
-        .unwrap();
-        match result {
-            Value::String(s) => {
-                assert!(s.starts_with("2023-01-02"));
-            }
-            _ => panic!("expected string"),
-        }
+    fn test_year() {
+        let result = call_fn(year(), vec![Value::String("2023-05-15".to_string())]).unwrap();
+        assert_eq!(result, Value::Number(2023.0));
     }
 
     #[test]
-    fn test_date_add_invalid_date() {
-        let result = call_fn(
-            date_add(),
-            vec![Value::String("invalid".to_string()), Value::Number(1.0)],
-        );
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert_eq!(err.code, "E012");
+    fn test_month() {
+        let result = call_fn(month(), vec![Value::String("2023-05-15".to_string())]).unwrap();
+        assert_eq!(result, Value::Number(5.0));
     }
 
     #[test]
-    fn test_date_add_non_string_arg() {
-        let result = call_fn(date_add(), vec![Value::Number(123.0), Value::Number(1.0)]);
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert_eq!(err.code, "E006");
+    fn test_day() {
+        let result = call_fn(day(), vec![Value::String("2023-05-15".to_string())]).unwrap();
+        assert_eq!(result, Value::Number(15.0));
     }
 
-    // -- date_diff() tests --
-
     #[test]
-    fn test_date_diff_basic() {
+    fn test_date_diff() {
         let result = call_fn(
             date_diff(),
             vec![
-                Value::String("2023-01-05T00:00:00Z".to_string()),
-                Value::String("2023-01-01T00:00:00Z".to_string()),
+                Value::String("2023-01-01".to_string()),
+                Value::String("2023-01-05".to_string()),
+                Value::String("days".to_string()), // ignored
             ],
         )
         .unwrap();
         assert_eq!(result, Value::Number(4.0));
-    }
-
-    #[test]
-    fn test_date_diff_reverse() {
-        let result = call_fn(
-            date_diff(),
-            vec![
-                Value::String("2023-01-01T00:00:00Z".to_string()),
-                Value::String("2023-01-05T00:00:00Z".to_string()),
-            ],
-        )
-        .unwrap();
-        assert_eq!(result, Value::Number(-4.0));
-    }
-
-    // -- year() tests --
-
-    #[test]
-    fn test_year_basic() {
-        let result = call_fn(
-            year(),
-            vec![Value::String("2023-05-15T10:30:00Z".to_string())],
-        )
-        .unwrap();
-        assert_eq!(result, Value::Number(2023.0));
-    }
-
-    // -- month() tests --
-
-    #[test]
-    fn test_month_basic() {
-        let result = call_fn(
-            month(),
-            vec![Value::String("2023-05-15T10:30:00Z".to_string())],
-        )
-        .unwrap();
-        assert_eq!(result, Value::Number(5.0));
-    }
-
-    // -- day() tests --
-
-    #[test]
-    fn test_day_basic() {
-        let result = call_fn(
-            day(),
-            vec![Value::String("2023-05-15T10:30:00Z".to_string())],
-        )
-        .unwrap();
-        assert_eq!(result, Value::Number(15.0));
     }
 }

@@ -103,7 +103,7 @@ pub struct OptimizationSuggestions {
 }
 
 /// Estimated computational complexity of a formula.
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub enum FormulaComplexity {
     /// Simple arithmetic or single function call
     Simple,

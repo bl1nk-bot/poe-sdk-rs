@@ -21,7 +21,7 @@ exclude = [
 ]
 
 [dependencies]
-chrono = { version = "0.4", features = ["serde"] }
+jiff = "0.2"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
