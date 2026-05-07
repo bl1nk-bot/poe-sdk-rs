@@ -51,7 +51,7 @@ use std::collections::HashMap;
 ///
 /// Variable lookup is O(1) average case using HashMap.
 /// Memory usage scales with number of variables stored.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Context {
     variables: HashMap<String, Value>,
 }

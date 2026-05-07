@@ -113,6 +113,7 @@ pub struct BuiltinFunction {
 /// - Date functions: `now`, `date_add`, `year`, `month`, `day`
 ///
 /// Use `formula_engine::builtins::register_all()` to register all built-ins.
+#[derive(Default)]
 pub struct FunctionRegistry {
     functions: HashMap<String, BuiltinFunction>,
 }

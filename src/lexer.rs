@@ -43,18 +43,16 @@ pub struct Token {
 /// Lexer struct เก็บสถานะการอ่าน
 struct Lexer<'a> {
     source: &'a str,
-    chars: std::str::Chars<'a>, // iterator ของ characters
-    pos: usize,                 // ตำแหน่ง byte ใน source
-    line: usize,                // บรรทัดปัจจุบัน (เริ่มที่ 1)
-    col: usize,                 // คอลัมน์ปัจจุบัน (เริ่มที่ 1)
-    tokens: Vec<Token>,         // token ที่อ่านได้แล้ว
+    pos: usize,         // ตำแหน่ง byte ใน source
+    line: usize,        // บรรทัดปัจจุบัน (เริ่มที่ 1)
+    col: usize,         // คอลัมน์ปัจจุบัน (เริ่มที่ 1)
+    tokens: Vec<Token>, // token ที่อ่านได้แล้ว
 }
 
 impl<'a> Lexer<'a> {
     fn new(source: &'a str) -> Self {
         Self {
             source,
-            chars: source.chars(),
             pos: 0,
             line: 1,
             col: 1,

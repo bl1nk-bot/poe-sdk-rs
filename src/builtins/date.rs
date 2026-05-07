@@ -18,6 +18,32 @@ pub fn now() -> BuiltinFunction {
     }
 }
 
+/// date_add(date_str, days) -> String
+/// เพิ่มจำนวนวันให้กับวันที่
+pub fn date_add() -> BuiltinFunction {
+    BuiltinFunction {
+        name: "date_add".to_string(),
+        arity: 2,
+        call: |args| {
+            let date_str = require_string(&args[0])?;
+            let days = require_number(&args[1])?;
+
+            let ts = parse_to_timestamp(&date_str)?;
+            let span = jiff::Span::new().days(days as i64);
+            let new_ts = ts.checked_add(span).map_err(|_| {
+                FormulaError::new(
+                    ErrorKind::FunctionError,
+                    "E010",
+                    "Date calculation error",
+                    None,
+                )
+            })?;
+
+            Ok(Value::String(new_ts.to_string()))
+        },
+    }
+}
+
 /// date(year, month, day) -> String
 /// สร้างวันที่และคืนเป็น string "YYYY-MM-DD"
 pub fn date() -> BuiltinFunction {

@@ -35,6 +35,7 @@ pub fn register_all(registry: &mut FunctionRegistry) {
 
     // ฟังก์ชัน date (Phase 6.3)
     registry.register(date::now());
+    registry.register(date::date_add());
     registry.register(date::date());
     registry.register(date::date_diff());
     registry.register(date::year());
