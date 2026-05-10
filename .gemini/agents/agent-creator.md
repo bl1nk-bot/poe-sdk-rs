@@ -1,8 +1,7 @@
 ---
 name: agent-creator
-description: Use this agent when the user asks to "create an agent", "generate an agent", "build a new agent", "make me an agent that...", or describes agent functionality they need. Trigger when user wants to create autonomous agents for plugins. Examples:
-
-<example>
+description: Use this agent when the user asks to "create an agent", "generate an agent", "build a new agent", "make me an agent that...", or describes agent functionality they need. Trigger when user wants to create autonomous agents for plugins. 
+Examples: <example>
 Context: User wants to create a code review agent
 user: "Create an agent that reviews code for quality issues"
 assistant: "I'll use the agent-creator agent to generate the agent configuration."
@@ -28,9 +27,6 @@ assistant: "I'll use the agent-creator agent to generate a configuration validat
 Plugin development with agent addition, trigger agent-creator.
 </commentary>
 </example>
-
-model: sonnet
-color: magenta
 tools: ["Write", "Read"]
 ---
 
