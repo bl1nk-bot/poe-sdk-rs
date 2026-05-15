@@ -55,7 +55,7 @@ pub fn evaluate(
                         return Err(FormulaError::new(
                             ErrorKind::TypeError,
                             "E006",
-                            &format!("คาดหวังแผนที่ แต่ได้อาร์เรย์ที่ '{}'", parts[i-1]),
+                            &format!("คาดหวังแผนที่ แต่ได้อาร์เรย์ที่ '{}'", parts[i - 1]),
                             Some(span),
                         ));
                     }
@@ -63,7 +63,7 @@ pub fn evaluate(
                         return Err(FormulaError::new(
                             ErrorKind::TypeError,
                             "E006",
-                            &format!("คาดหวังแผนที่ แต่ได้ค่าที่ไม่ใช่แผนที่ที่ '{}'", parts[i-1]),
+                            &format!("คาดหวังแผนที่ แต่ได้ค่าที่ไม่ใช่แผนที่ที่ '{}'", parts[i - 1]),
                             Some(span),
                         ));
                     }
@@ -86,7 +86,7 @@ pub fn evaluate(
                     Some(span),
                 )
             })
-        },
+        }
         Expr::Grouping(inner) => evaluate(inner, ctx, registry),
         Expr::UnaryExpr { op, expr } => {
             let val = evaluate(expr, ctx, registry)?;

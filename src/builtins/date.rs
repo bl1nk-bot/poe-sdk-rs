@@ -195,9 +195,9 @@ mod tests {
         let result = call_fn(now(), vec![]).unwrap();
         match result {
             Value::String(s) => {
-                 // Basic check that it returns a string and looks like a timestamp
-                 assert!(!s.is_empty());
-                 assert!(s.contains('T'));
+                // Basic check that it returns a string and looks like a timestamp
+                assert!(!s.is_empty());
+                assert!(s.contains('T'));
             }
             _ => panic!("expected string"),
         }
