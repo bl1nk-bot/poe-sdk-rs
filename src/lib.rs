@@ -533,7 +533,7 @@ mod integration_tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.kind, ErrorKind::FunctionError);
-        assert_eq!(err.code, "E401");
+        assert_eq!(err.code, "E501");
     }
 
     #[test]
@@ -554,7 +554,7 @@ mod integration_tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.kind, ErrorKind::FunctionError);
-        assert_eq!(err.code, "E401");
+        assert_eq!(err.code, "E501");
     }
 
     #[test]
@@ -686,7 +686,7 @@ mod integration_tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.kind, ErrorKind::FunctionError);
-        assert_eq!(err.code, "E401");
+        assert_eq!(err.code, "E501");
     }
 
     #[test]
@@ -699,7 +699,7 @@ mod integration_tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert_eq!(err.kind, ErrorKind::FunctionError);
-        assert_eq!(err.code, "E401");
+        assert_eq!(err.code, "E501");
     }
 
     #[test]

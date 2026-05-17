@@ -39,3 +39,7 @@ criterion-*
 
 # Backup files
 *~
+
+# Snapshot files (insta)
+*.snap
+tests/snapshots/
