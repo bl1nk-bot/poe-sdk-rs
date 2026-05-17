@@ -6,8 +6,8 @@
 //! - Evaluating with context and functions
 //! - Error handling
 
-use formula_engine::builtins;
-use formula_engine::{evaluate, parse, tokenize, Context, FunctionRegistry, Value};
+use bl1z::builtins;
+use bl1z::{evaluate, parse, tokenize, Context, FunctionRegistry, Value};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Formula Engine - Basic Example");

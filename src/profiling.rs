@@ -38,14 +38,14 @@ pub struct PerformanceMetrics {
 /// # Examples
 ///
 /// ```
-/// use formula_engine::{Context, FunctionRegistry, builtins};
-/// use formula_engine::profiling::profile_formula;
+/// use bl1z::{Context, FunctionRegistry, builtins};
+/// use bl1z::profiling::profile_formula;
 ///
 /// let mut registry = FunctionRegistry::new();
 /// builtins::register_all(&mut registry);
 /// let ctx = Context::new();
 ///
-/// let metrics = profile_formula("sum([1,2,3,4,5])", &ctx, &registry, 1000)?;
+/// let metrics = profile_formula("sum([1,2,3,4,5])", &ctx, &registry, 1000).unwrap();
 /// println!("Average evaluation time: {:?}", metrics.eval_time / metrics.iterations as u32);
 /// ```
 pub fn profile_formula(
@@ -130,9 +130,9 @@ pub enum FormulaComplexity {
 /// # Examples
 ///
 /// ```
-/// use formula_engine::profiling::analyze_formula;
+/// use bl1z::profiling::analyze_formula;
 ///
-/// let analysis = analyze_formula("sum([1,2,3,4,5,6,7,8,9,10])")?;
+/// let analysis = analyze_formula("sum([1,2,3,4,5,6,7,8,9,10])").unwrap();
 /// println!("Complexity: {:?}", analysis.complexity);
 /// for suggestion in &analysis.suggestions {
 ///     println!("- {}", suggestion);

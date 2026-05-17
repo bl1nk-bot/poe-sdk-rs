@@ -13,14 +13,14 @@ We take security seriously. This section outlines our security policy and how to
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Formula Engine, please help us by reporting it responsibly.
+If you discover a security vulnerability in bl1z, please help us by reporting it responsibly.
 
 ### How to Report
 
 **DO NOT** create public GitHub issues for security vulnerabilities.
 
 Instead, please report security vulnerabilities by emailing:
-- **Email**: security@formula-engine.dev
+- **Email**: security@bl1z.dev
 - **Subject**: `[SECURITY] Vulnerability Report`
 
 ### What to Include
@@ -44,7 +44,7 @@ We will keep you informed about our progress throughout the process of fixing th
 
 ### Memory Safety
 
-Formula Engine is written in Rust and benefits from Rust's memory safety guarantees:
+bl1z is written in Rust and benefits from Rust's memory safety guarantees:
 - No buffer overflows
 - No use-after-free errors
 - No null pointer dereferences
@@ -65,7 +65,7 @@ Formula Engine is written in Rust and benefits from Rust's memory safety guarant
 
 ### Best Practices
 
-When using Formula Engine in production:
+When using bl1z in production:
 
 1. **Validate Inputs**: Always validate formula inputs before evaluation
 2. **Limit Complexity**: Set reasonable limits on expression complexity
@@ -122,8 +122,8 @@ In the event of a confirmed security vulnerability:
 ## Contact Information
 
 For security-related questions or concerns:
-- **Security Issues**: security@formula-engine.dev
-- **General Support**: support@formula-engine.dev
+- **Security Issues**: security@bl1z.dev
+- **General Support**: support@bl1z.dev
 - **GitHub Issues**: For non-security issues only
 
 ## Acknowledgments

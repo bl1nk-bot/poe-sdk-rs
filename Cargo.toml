@@ -1,15 +1,15 @@
 [package]
-name = "formula_engine"
+name = "bl1z"
 version = "0.1.0"
 edition = "2021"
-authors = ["Formula Engine Team"]
+authors = ["bl1z Team"]
 description = "A high-performance, extensible formula evaluation engine for Rust"
 license = "MIT OR Apache-2.0"
 keywords = ["formula", "expression", "evaluation", "parser", "calculator"]
 categories = ["parsing", "mathematics", "data-structures"]
-homepage = "https://github.com/your-org/formula-engine"
-repository = "https://github.com/your-org/formula-engine"
-documentation = "https://docs.rs/formula_engine"
+homepage = "https://github.com/bl1nk-bot/bl1z"
+repository = "https://github.com/bl1nk-bot/bl1z"
+documentation = "https://docs.rs/bl1z"
 readme = "README.md"
 exclude = [
     ".github/",

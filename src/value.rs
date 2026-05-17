@@ -21,7 +21,7 @@
 /// # Examples
 ///
 /// ```
-/// use formula_engine::Value;
+/// use bl1z::Value;
 /// use std::collections::HashMap;
 ///
 /// // Basic values
@@ -76,7 +76,7 @@ pub enum Value {
     /// # Examples
     ///
     /// ```
-    /// use formula_engine::Value;
+    /// use bl1z::Value;
     /// let numbers = Value::Array(vec![
     ///     Value::Number(1.0),
     ///     Value::Number(2.0),
@@ -98,7 +98,7 @@ pub enum Value {
     /// # Examples
     ///
     /// ```
-    /// use formula_engine::Value;
+    /// use bl1z::Value;
     /// use std::collections::HashMap;
     ///
     /// let mut person = HashMap::new();

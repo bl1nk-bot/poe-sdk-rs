@@ -1,6 +1,6 @@
+use bl1z::builtins;
+use bl1z::{evaluate, parse, tokenize, Context, FunctionRegistry};
 use criterion::{criterion_group, criterion_main, Criterion};
-use formula_engine::builtins;
-use formula_engine::{evaluate, parse, tokenize, Context, FunctionRegistry};
 
 /// Benchmark basic arithmetic expressions
 fn bench_basic_arithmetic(c: &mut Criterion) {

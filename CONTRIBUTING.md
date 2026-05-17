@@ -35,8 +35,8 @@ This project follows a code of conduct to ensure a welcoming environment for all
 
 1. **Fork and Clone** the repository:
    ```bash
-   git clone https://github.com/your-username/formula-engine.git
-   cd formula-engine
+   git clone https://github.com/billlzzz26/bl1z.git
+   cd bl1z
    ```
 
 2. **Set up development environment**:
@@ -86,14 +86,14 @@ cargo install cargo-audit    # For security auditing
 
 ### 1. Choose an Issue
 
-- Check [GitHub Issues](https://github.com/your-org/formula-engine/issues) for open tasks
+- Check [GitHub Issues](https://github.com/bl1nk-bot/bl1z/issues) for open tasks
 - Look for issues labeled `good first issue` or `help wanted`
 - Comment on the issue to indicate you're working on it
 
 ### 2. Create a Branch
 
 ```bash
-git checkout -b feature/your-feature-name
+git checkout -b feature/my-feature
 # or
 git checkout -b fix/issue-number-description
 ```
@@ -163,7 +163,7 @@ cargo bench                    # Benchmarks (if applicable)
 ///
 /// # Examples
 /// ```
-/// use formula_engine::example_function;
+/// use bl1z::example_function;
 /// let result = example_function(42);
 /// assert_eq!(result, 84);
 /// ```

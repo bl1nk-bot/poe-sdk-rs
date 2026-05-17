@@ -16,14 +16,14 @@ use std::collections::HashMap;
 /// # Examples
 ///
 /// ```
-/// use formula_engine::functions::BuiltinFunction;
-/// use formula_engine::{Value, error::FormulaError};
+/// use bl1z::functions::BuiltinFunction;
+/// use bl1z::{Value, error::FormulaError};
 ///
 /// fn my_add(args: &[Value]) -> Result<Value, FormulaError> {
 ///     match (args.get(0), args.get(1)) {
 ///         (Some(Value::Number(a)), Some(Value::Number(b))) => Ok(Value::Number(a + b)),
 ///         _ => Err(FormulaError::new(
-///             formula_engine::error::ErrorKind::TypeError,
+///             bl1z::error::ErrorKind::TypeError,
 ///             "E006",
 ///             "Expected two numbers",
 ///             None
@@ -73,8 +73,8 @@ pub struct BuiltinFunction {
 /// # Examples
 ///
 /// ```
-/// use formula_engine::{FunctionRegistry, Value, error::FormulaError};
-/// use formula_engine::functions::BuiltinFunction;
+/// use bl1z::{FunctionRegistry, Value, error::FormulaError};
+/// use bl1z::functions::BuiltinFunction;
 ///
 /// let mut registry = FunctionRegistry::new();
 ///
@@ -83,7 +83,7 @@ pub struct BuiltinFunction {
 ///     match args.get(0) {
 ///         Some(Value::String(name)) => Ok(Value::String(format!("Hello, {}!", name))),
 ///         _ => Err(FormulaError::new(
-///             formula_engine::error::ErrorKind::TypeError,
+///             bl1z::error::ErrorKind::TypeError,
 ///             "E006",
 ///             "Expected string argument",
 ///             None
@@ -112,7 +112,7 @@ pub struct BuiltinFunction {
 /// - Collection functions: `sum`, `avg`, `count`, `join`
 /// - Date functions: `now`, `date_add`, `year`, `month`, `day`
 ///
-/// Use `formula_engine::builtins::register_all()` to register all built-ins.
+/// Use `bl1z::builtins::register_all()` to register all built-ins.
 #[derive(Default)]
 pub struct FunctionRegistry {
     functions: HashMap<String, BuiltinFunction>,
@@ -127,7 +127,7 @@ impl FunctionRegistry {
     /// # Examples
     ///
     /// ```
-    /// use formula_engine::FunctionRegistry;
+    /// use bl1z::FunctionRegistry;
     /// let registry = FunctionRegistry::new();
     /// assert!(registry.find("nonexistent").is_none());
     /// ```
@@ -148,13 +148,13 @@ impl FunctionRegistry {
     /// # Examples
     ///
     /// ```
-    /// use formula_engine::{FunctionRegistry, functions::BuiltinFunction, Value, error::FormulaError};
+    /// use bl1z::{FunctionRegistry, functions::BuiltinFunction, Value, error::FormulaError};
     ///
     /// fn double(args: &[Value]) -> Result<Value, FormulaError> {
     ///     match args.get(0) {
     ///         Some(Value::Number(n)) => Ok(Value::Number(n * 2.0)),
     ///         _ => Err(FormulaError::new(
-    ///             formula_engine::error::ErrorKind::TypeError,
+    ///             bl1z::error::ErrorKind::TypeError,
     ///             "E006",
     ///             "Expected number",
     ///             None
@@ -191,7 +191,7 @@ impl FunctionRegistry {
     /// # Examples
     ///
     /// ```
-    /// use formula_engine::{FunctionRegistry, builtins};
+    /// use bl1z::{FunctionRegistry, builtins};
     ///
     /// let mut registry = FunctionRegistry::new();
     /// builtins::register_all(&mut registry);

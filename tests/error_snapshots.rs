@@ -1,6 +1,6 @@
-use formula_engine::builtins;
-use formula_engine::diagnostics::format_error;
-use formula_engine::{evaluate, parse, tokenize, Context, FunctionRegistry};
+use bl1z::builtins;
+use bl1z::diagnostics::format_error;
+use bl1z::{evaluate, parse, tokenize, Context, FunctionRegistry};
 use insta::assert_snapshot;
 
 /// Test error formatting snapshots

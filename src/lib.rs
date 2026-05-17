@@ -45,8 +45,8 @@
 //! ## Example
 //!
 //! ```
-//! use formula_engine::{tokenize, parse, evaluate, Context, FunctionRegistry};
-//! use formula_engine::builtins;
+//! use bl1z::{tokenize, parse, evaluate, Context, FunctionRegistry};
+//! use bl1z::builtins;
 //!
 //! // Create a function registry with built-in functions
 //! let mut registry = FunctionRegistry::new();
@@ -58,7 +58,7 @@
 //! let ctx = Context::new();
 //! let result = evaluate(&ast, &ctx, &registry).unwrap();
 //!
-//! assert_eq!(result, formula_engine::Value::String("pass".to_string()));
+//! assert_eq!(result, bl1z::Value::String("pass".to_string()));
 //! ```
 //!
 //! ## Error Handling
@@ -85,8 +85,8 @@
 //! - No panics in normal operation
 
 /// ```
-/// use formula_engine::{tokenize, parse, evaluate, Context, FunctionRegistry};
-/// use formula_engine::builtins;
+/// use bl1z::{tokenize, parse, evaluate, Context, FunctionRegistry};
+/// use bl1z::builtins;
 ///
 /// let mut registry = FunctionRegistry::new();
 /// builtins::register_all(&mut registry);
@@ -95,7 +95,7 @@
 /// let ast = parse(&tokens).unwrap();
 /// let ctx = Context::new();
 /// let result = evaluate(&ast, &ctx, &registry).unwrap();
-/// assert_eq!(result, formula_engine::Value::String("pass".to_string()));
+/// assert_eq!(result, bl1z::Value::String("pass".to_string()));
 /// ```
 pub mod ast;
 pub mod builtins;
@@ -138,7 +138,7 @@ pub use value::Value;
 ///
 /// # Example
 /// ```
-/// use formula_engine::tokenize;
+/// use bl1z::tokenize;
 /// let tokens = tokenize("1 + 2 * 3").unwrap();
 /// assert_eq!(tokens.len(), 5); // 3 numbers, 2 operators, 1 EOF
 /// ```
@@ -157,7 +157,7 @@ pub use value::Value;
 ///
 /// # Example
 /// ```
-/// use formula_engine::{tokenize, parse};
+/// use bl1z::{tokenize, parse};
 /// let tokens = tokenize("1 + 2 * 3").unwrap();
 /// let ast = parse(&tokens).unwrap();
 /// // AST represents (1 + (2 * 3))
@@ -177,8 +177,8 @@ pub use value::Value;
 ///
 /// # Example
 /// ```
-/// use formula_engine::{tokenize, parse, evaluate, Context, FunctionRegistry, Value};
-/// use formula_engine::builtins;
+/// use bl1z::{tokenize, parse, evaluate, Context, FunctionRegistry, Value};
+/// use bl1z::builtins;
 ///
 /// let mut registry = FunctionRegistry::new();
 /// builtins::register_all(&mut registry);

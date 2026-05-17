@@ -15,8 +15,8 @@ use std::collections::HashMap;
 /// # Examples
 ///
 /// ```
-/// use formula_engine::{Context, Value, tokenize, parse, evaluate, FunctionRegistry};
-/// use formula_engine::builtins;
+/// use bl1z::{Context, Value, tokenize, parse, evaluate, FunctionRegistry};
+/// use bl1z::builtins;
 ///
 /// let mut registry = FunctionRegistry::new();
 /// builtins::register_all(&mut registry);
@@ -65,7 +65,7 @@ impl Context {
     /// # Examples
     ///
     /// ```
-    /// use formula_engine::Context;
+    /// use bl1z::Context;
     /// let ctx = Context::new();
     /// assert!(ctx.get("undefined").is_none());
     /// ```
@@ -87,7 +87,7 @@ impl Context {
     /// # Examples
     ///
     /// ```
-    /// use formula_engine::{Context, Value};
+    /// use bl1z::{Context, Value};
     /// let mut ctx = Context::new();
     ///
     /// ctx.set("count", Value::Number(42.0));
@@ -115,7 +115,7 @@ impl Context {
     /// # Examples
     ///
     /// ```
-    /// use formula_engine::{Context, Value};
+    /// use bl1z::{Context, Value};
     /// let mut ctx = Context::new();
     ///
     /// ctx.set("score", Value::Number(100.0));

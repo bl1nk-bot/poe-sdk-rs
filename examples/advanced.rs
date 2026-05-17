@@ -4,8 +4,8 @@
 //! - Performance considerations
 //! - Error handling patterns
 
-use formula_engine::builtins;
-use formula_engine::{
+use bl1z::builtins;
+use bl1z::{
     error::FormulaError, evaluate, functions::BuiltinFunction, parse, tokenize, Context,
     FunctionRegistry, Value,
 };
@@ -85,7 +85,7 @@ fn register_custom_functions(registry: &mut FunctionRegistry) {
                 Ok(Value::Number(result as f64))
             }
             _ => Err(FormulaError::new(
-                formula_engine::error::ErrorKind::TypeError,
+                bl1z::error::ErrorKind::TypeError,
                 "E006",
                 "fibonacci expects non-negative integer",
                 None,
@@ -108,7 +108,7 @@ fn register_custom_functions(registry: &mut FunctionRegistry) {
                 Ok(Value::Number(base.powf(*exp)))
             }
             _ => Err(FormulaError::new(
-                formula_engine::error::ErrorKind::TypeError,
+                bl1z::error::ErrorKind::TypeError,
                 "E006",
                 "power expects two numbers",
                 None,
@@ -121,7 +121,7 @@ fn register_custom_functions(registry: &mut FunctionRegistry) {
         match args.first() {
             Some(Value::Number(n)) if n.fract() == 0.0 => Ok(Value::Bool((*n as i64) % 2 == 0)),
             _ => Err(FormulaError::new(
-                formula_engine::error::ErrorKind::TypeError,
+                bl1z::error::ErrorKind::TypeError,
                 "E006",
                 "is_even expects integer",
                 None,
@@ -137,7 +137,7 @@ fn register_custom_functions(registry: &mut FunctionRegistry) {
                 Ok(Value::Number(clamped))
             }
             _ => Err(FormulaError::new(
-                formula_engine::error::ErrorKind::TypeError,
+                bl1z::error::ErrorKind::TypeError,
                 "E006",
                 "clamp expects three numbers: value, min, max",
                 None,

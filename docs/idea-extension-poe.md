@@ -268,7 +268,7 @@ if __name__ == "__main__":
       // ตัวอย่าง: สร้าง Poe bot script
       let config = PoeConfig {
           bot_name: "my_poe_bot".to_string(),
-          api_key: Some("your-api-key".to_string()),
+          api_key: Some("BL1Z_API_KEY".to_string()),
           version: "1.0.0".to_string(),
           description: "A custom Poe bot created by Rust extension".to_string(),
       };

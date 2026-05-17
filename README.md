@@ -1,18 +1,18 @@
-# Formula Engine
+# bl1z
 
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
 [![Version](https://img.shields.io/badge/version-0.1.0-green.svg)]()
 [![Build Status](https://github.com/bl1nk-bot/poe-sdk-rs/workflows/CI/badge.svg)](https://github.com/bl1nk-bot/poe-sdk-rs/actions)
-[![Documentation](https://docs.rs/formula_engine/badge.svg)](https://docs.rs/formula_engine)
-[![Crates.io](https://img.shields.io/crates/v/formula_engine.svg)](https://crates.io/crates/formula_engine)
-[![Downloads](https://img.shields.io/crates/d/formula_engine.svg)](https://crates.io/crates/formula_engine)
+[![Documentation](https://docs.rs/bl1z/badge.svg)](https://docs.rs/bl1z)
+[![Crates.io](https://img.shields.io/crates/v/bl1z.svg)](https://crates.io/crates/bl1z)
+[![Downloads](https://img.shields.io/crates/d/bl1z.svg)](https://crates.io/crates/bl1z)
 [![Code Coverage](https://codecov.io/gh/bl1nk-bot/poe-sdk-rs/branch/main/graph/badge.svg)](https://codecov.io/gh/bl1nk-bot/poe-sdk-rs)
-[![Discord](https://img.shields.io/discord/your-server-id?color=7289DA&label=Discord)](https://discord.gg/your-invite)
+[![Discord](https://img.shields.io/discord/000000000000000000?color=7289DA&label=Discord)](https://discord.gg/bl1z)
 
 ## 📖 ภาพรวม
 
-**Formula Engine** คือไลบรารีสำหรับแยกส่วน (parse) และประมวลผล (evaluate) สูตรทางคณิตศาสตร์และตรรกะแบบ Notion-like ที่เขียนด้วยภาษา Rust ออกแบบมาให้มีความยืดหยุ่นสูง สามารถขยายฟังก์ชันและชนิดข้อมูลได้ง่ายผ่านระบบ registry
+**bl1z** คือไลบรารีสำหรับแยกส่วน (parse) และประมวลผล (evaluate) สูตรทางคณิตศาสตร์และตรรกะแบบ Notion-like ที่เขียนด้วยภาษา Rust ออกแบบมาให้มีความยืดหยุ่นสูง สามารถขยายฟังก์ชันและชนิดข้อมูลได้ง่ายผ่านระบบ registry
 
 ### ✨ คุณสมบัติหลัก
 
@@ -36,14 +36,14 @@
 
 ```toml
 [dependencies]
-formula_engine = "0.1.0"
+bl1z = "0.1.0"
 ```
 
 หรือหากต้องการใช้จาก source code ในเครื่อง:
 
 ```toml
 [dependencies]
-formula_engine = { path = "./path/to/formula_engine" }
+bl1z = { path = "./path/to/bl1z" }
 ```
 
 ---
@@ -53,8 +53,8 @@ formula_engine = { path = "./path/to/formula_engine" }
 ### ตัวอย่างพื้นฐาน
 
 ```rust
-use formula_engine::{tokenize, parse, evaluate, Context, FunctionRegistry};
-use formula_engine::builtins;
+use bl1z::{tokenize, parse, evaluate, Context, FunctionRegistry};
+use bl1z::builtins;
 
 // สร้าง registry พร้อมฟังก์ชันพื้นฐาน
 let mut registry = FunctionRegistry::new();
@@ -72,8 +72,8 @@ println!("ผลลัพธ์: {:?}", result); // Number(7.0)
 ### ใช้กับฟังก์ชัน Built-in
 
 ```rust
-use formula_engine::{tokenize, parse, evaluate, Context, FunctionRegistry};
-use formula_engine::builtins;
+use bl1z::{tokenize, parse, evaluate, Context, FunctionRegistry};
+use bl1z::builtins;
 
 let mut registry = FunctionRegistry::new();
 builtins::register_all(&mut registry);
@@ -83,20 +83,20 @@ let tokens = tokenize("if(true, \"ผ่าน\", \"ไม่ผ่าน\")").u
 let ast = parse(&tokens).unwrap();
 let ctx = Context::new();
 let result = evaluate(&ast, &ctx, &registry).unwrap();
-assert_eq!(result, formula_engine::Value::String("ผ่าน".to_string()));
+assert_eq!(result, bl1z::Value::String("ผ่าน".to_string()));
 
 // ตัวอย่าง: ฟังก์ชัน string
 let tokens = tokenize("len(\"hello\")").unwrap();
 let ast = parse(&tokens).unwrap();
 let result = evaluate(&ast, &ctx, &registry).unwrap();
-assert_eq!(result, formula_engine::Value::Number(5.0));
+assert_eq!(result, bl1z::Value::Number(5.0));
 ```
 
 ### ใช้กับตัวแปร (Context)
 
 ```rust
-use formula_engine::{tokenize, parse, evaluate, Context, FunctionRegistry, Value};
-use formula_engine::builtins;
+use bl1z::{tokenize, parse, evaluate, Context, FunctionRegistry, Value};
+use bl1z::builtins;
 
 let mut registry = FunctionRegistry::new();
 builtins::register_all(&mut registry);
@@ -108,7 +108,7 @@ ctx.set_variable("name", Value::String("สมชาย".to_string()));
 let tokens = tokenize("if(score > 50, name, \"ไม่มีใคร\")").unwrap();
 let ast = parse(&tokens).unwrap();
 let result = evaluate(&ast, &ctx, &registry).unwrap();
-assert_eq!(result, formula_engine::Value::String("สมชาย".to_string()));
+assert_eq!(result, bl1z::Value::String("สมชาย".to_string()));
 ```
 
 ---
@@ -182,7 +182,7 @@ assert_eq!(result, formula_engine::Value::String("สมชาย".to_string()))
 
 ## 🏗️ สถาปัตยกรรม
 
-Formula Engine ใช้สถาปัตยกรรมแบบ layered architecture:
+bl1z ใช้สถาปัตยกรรมแบบ layered architecture:
 
 ```
 ┌─────────────────┐
@@ -213,7 +213,7 @@ Formula Engine ใช้สถาปัตยกรรมแบบ layered archi
 ### โครงสร้างโปรเจกต์
 
 ```
-formula_engine/
+bl1z/
 ├── src/
 │   ├── lib.rs           # จุดเข้าใช้งานหลักและ re-export
 │   ├── lexer.rs         # Lexer: แปลง string → tokens
