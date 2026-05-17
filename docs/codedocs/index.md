@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     ctx.set("score", Value::Number(87.5));
     ctx.set("bonus", Value::Number(12.5));
 
-    let tokens = tokenize("if(score + bonus >= 100, "pass", "review")")?;
+    let tokens = tokenize(r#"if(score + bonus >= 100, "pass", "review")"#)?;
     let ast = parse(&tokens)?;
     let result = evaluate(&ast, &ctx, &registry)?;
 
