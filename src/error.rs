@@ -16,8 +16,8 @@ pub enum ErrorKind {
     // E6xx — Context errors
     ContextError,
     // Phase 8: Property and index access errors (reserved)
-    PropertyNotFound,   // E207
-    IndexOutOfBounds,   // E208
+    PropertyNotFound, // E207
+    IndexOutOfBounds, // E208
 }
 
 /// ข้อผิดพลาดที่เกิดขึ้นใน engine

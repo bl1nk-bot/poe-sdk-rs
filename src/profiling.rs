@@ -249,5 +249,4 @@ mod tests {
             .iter()
             .any(|s| s.contains("external data sources")));
     }
-
 }
