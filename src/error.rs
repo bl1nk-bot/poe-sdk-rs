@@ -21,7 +21,7 @@ pub enum ErrorKind {
 }
 
 /// ข้อผิดพลาดที่เกิดขึ้นใน engine
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FormulaError {
     pub kind: ErrorKind,
     pub code: String,       // เช่น "E101"

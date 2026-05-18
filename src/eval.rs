@@ -14,78 +14,63 @@ pub fn evaluate(
     let span = expr.meta.span;
     match &expr.expr {
         Expr::Literal(val) => Ok(val.clone()),
-        Expr::Variable(name) => {
-            let parts: Vec<&str> = name.split('.').collect();
-            if parts.is_empty() {
-                return Err(FormulaError::new(
-                    ErrorKind::ContextError,
-                    "E601",
-                    &format!("ไม่พบตัวแปร '{}'", name),
+        Expr::Variable(name) => ctx.get(name).cloned().ok_or_else(|| {
+            FormulaError::new(
+                ErrorKind::ContextError,
+                "E601",
+                &format!("ไม่พบตัวแปร '{}'", name),
+                Some(span),
+            )
+        }),
+        Expr::PropertyAccess { object, field } => {
+            let obj = evaluate(object, ctx, registry)?;
+            match obj {
+                Value::Map(map) => map.get(field).cloned().ok_or_else(|| {
+                    FormulaError::new(
+                        ErrorKind::PropertyNotFound,
+                        "E207",
+                        &format!("ไม่พบ property '{}'", field),
+                        Some(span),
+                    )
+                }),
+                _ => Err(FormulaError::new(
+                    ErrorKind::TypeError,
+                    "E401",
+                    "ไม่สามารถเข้าถึง property ของค่าที่ไม่ใช่ map ได้",
                     Some(span),
-                ));
+                )),
             }
-
-            // Look up the first part in the root context
-            let mut current = ctx.get(parts[0]).cloned();
-            if current.is_none() {
-                return Err(FormulaError::new(
-                    ErrorKind::ContextError,
-                    "E601",
-                    &format!("ไม่พบตัวแปร '{}'", parts[0]),
-                    Some(span),
-                ));
-            }
-
-            // Traverse the remaining parts
-            for i in 1..parts.len() {
-                let part = parts[i];
-                match &current {
-                    Some(Value::Map(map)) => {
-                        current = map.get(part).cloned();
-                        if current.is_none() {
-                            return Err(FormulaError::new(
-                                ErrorKind::ContextError,
-                                "E601",
-                                &format!("ไม่พบตัวแปร '{}'", part),
-                                Some(span),
-                            ));
-                        }
-                    }
-                    Some(Value::Array(_)) => {
-                        return Err(FormulaError::new(
-                            ErrorKind::TypeError,
-                            "E401",
-                            &format!("คาดหวังแผนที่ แต่ได้อาร์เรย์ที่ '{}'", parts[i - 1]),
+        }
+        Expr::IndexAccess { object, index } => {
+            let obj = evaluate(object, ctx, registry)?;
+            let idx = evaluate(index, ctx, registry)?;
+            match (obj, idx) {
+                (Value::Array(arr), Value::Number(n)) => {
+                    let i = n as usize;
+                    if n < 0.0 || i >= arr.len() {
+                        Err(FormulaError::new(
+                            ErrorKind::IndexOutOfBounds,
+                            "E208",
+                            &format!("index {} นอกขอบเขต (ขนาด {})", n, arr.len()),
                             Some(span),
-                        ));
-                    }
-                    Some(_) => {
-                        return Err(FormulaError::new(
-                            ErrorKind::TypeError,
-                            "E401",
-                            &format!("คาดหวังแผนที่ แต่ได้ค่าที่ไม่ใช่แผนที่ที่ '{}'", parts[i - 1]),
-                            Some(span),
-                        ));
-                    }
-                    None => {
-                        return Err(FormulaError::new(
-                            ErrorKind::ContextError,
-                            "E601",
-                            &format!("ไม่พบตัวแปร '{}'", part),
-                            Some(span),
-                        ));
+                        ))
+                    } else {
+                        Ok(arr[i].clone())
                     }
                 }
-            }
-
-            current.ok_or_else(|| {
-                FormulaError::new(
-                    ErrorKind::ContextError,
-                    "E601",
-                    &format!("ไม่พบตัวแปร '{}'", name),
+                (Value::Array(_), _) => Err(FormulaError::new(
+                    ErrorKind::TypeError,
+                    "E401",
+                    "index ของ array ต้องเป็นตัวเลข",
                     Some(span),
-                )
-            })
+                )),
+                _ => Err(FormulaError::new(
+                    ErrorKind::TypeError,
+                    "E401",
+                    "ไม่สามารถ index ค่าที่ไม่ใช่ array ได้",
+                    Some(span),
+                )),
+            }
         }
         Expr::Grouping(inner) => evaluate(inner, ctx, registry),
         Expr::UnaryExpr { op, expr } => {

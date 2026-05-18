@@ -168,7 +168,57 @@ impl<'a> Parser<'a> {
                 span,
             ));
         }
-        self.parse_primary()
+        self.parse_postfix()
+    }
+
+    /// postfix = primary (('.' IDENT) | ('[' expression ']'))*
+    fn parse_postfix(&mut self) -> Result<SpannedExpr, FormulaError> {
+        let mut expr = self.parse_primary()?;
+        loop {
+            match self.peek() {
+                TokenKind::Dot => {
+                    self.advance();
+                    let field_tok = self.advance();
+                    if field_tok.kind != TokenKind::Identifier {
+                        return Err(FormulaError::new(
+                            ErrorKind::ParseError,
+                            "E201",
+                            "Expected identifier after dot",
+                            Some(field_tok.span),
+                        ));
+                    }
+                    let span = Span {
+                        start: expr.meta.span.start,
+                        end: field_tok.span.end,
+                    };
+                    expr = SpannedExpr::new(
+                        Expr::PropertyAccess {
+                            object: Box::new(expr),
+                            field: field_tok.lexeme.clone(),
+                        },
+                        span,
+                    );
+                }
+                TokenKind::LBracket => {
+                    self.advance();
+                    let index = self.parse_expression()?;
+                    self.expect(TokenKind::RBracket, "ต้องการ ']' ปิดท้าย index")?;
+                    let span = Span {
+                        start: expr.meta.span.start,
+                        end: index.meta.span.end,
+                    };
+                    expr = SpannedExpr::new(
+                        Expr::IndexAccess {
+                            object: Box::new(expr),
+                            index: Box::new(index),
+                        },
+                        span,
+                    );
+                }
+                _ => break,
+            }
+        }
+        Ok(expr)
     }
 
     /// primary = NUMBER | STRING | TRUE | FALSE | IDENTIFIER | '(' expression ')' | function_call
@@ -207,21 +257,7 @@ impl<'a> Parser<'a> {
                 span,
             )),
             TokenKind::Identifier => {
-                let mut name = tok.lexeme.clone();
-                // Handle dot notation for property access (e.g., user.score)
-                while self.peek() == TokenKind::Dot {
-                    self.advance(); // consume the dot
-                    let field_tok = self.advance();
-                    if field_tok.kind != TokenKind::Identifier {
-                        return Err(FormulaError::new(
-                            ErrorKind::ParseError,
-                            "E201",
-                            "Expected identifier after dot",
-                            Some(field_tok.span),
-                        ));
-                    }
-                    name = format!("{}.{}", name, field_tok.lexeme);
-                }
+                let name = tok.lexeme.clone();
                 // ถ้าเจอ '(' ข้างหน้า คือ function call
                 if self.peek() == TokenKind::LParen {
                     self.advance(); // กิน '('

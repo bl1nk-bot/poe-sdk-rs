@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org)
-[![Version](https://img.shields.io/badge/version-0.1.0-green.svg)]()
+[![Version](https://img.shields.io/badge/version-0.2.0-green.svg)]()
 [![Build Status](https://github.com/bl1nk-bot/poe-sdk-rs/workflows/CI/badge.svg)](https://github.com/bl1nk-bot/poe-sdk-rs/actions)
 [![Documentation](https://docs.rs/bl1z/badge.svg)](https://docs.rs/bl1z)
 [![Crates.io](https://img.shields.io/crates/v/bl1z.svg)](https://crates.io/crates/bl1z)
@@ -256,21 +256,22 @@ bl1z/
 - [x] Error Reporting: รายงานข้อผิดพลาดพร้อมตำแหน่ง
 - [x] Documentation: Doc-tests และ integration tests
 
-### ✅ เสร็จสมบูรณ์ (Phase 6 - Advanced Features)
+### ✅ เสร็จสมบูรณ์ (V2 - Phase 8 & 8.5)
 
-- [x] Array syntax และ evaluation
-- [x] Map/Dictionary support
-- [x] Date/Time functions
-- [x] Additional collection functions
-- [ ] Performance optimization (Phase 7)
+- [x] Access chaining: `obj.prop`, `arr[0]`, `users[0].name`
+- [x] Nested access: `a.b[0].c.d`, `{a: {b: 1}}.a.b`
+- [x] Context scoping: parent chain resolution, variable shadowing
+- [x] Context utilities: `with_parent()`, `get_all()`, `depth()`
+- [x] Error codes: E207 (PropertyNotFound), E208 (IndexOutOfBounds)
 
-### 📋 แผนในอนาคต (Phase 7+)
+### 📋 แผนในอนาคต (Phase 9+)
 
-- [ ] Static type checking
-- [ ] Macro system
-- [ ] User-defined functions
-- [ ] Lazy evaluation
-- [ ] Caching/Memoization
+- [ ] Lambda & higher-order functions (`map`, `filter`, `reduce`)
+- [ ] User-defined functions (`def name(params) = expr`)
+- [ ] Native `DateTime`/`Duration` via `jiff`
+- [ ] Serialization & caching
+- [ ] Plugin SDK
+- [ ] Performance optimization
 
 ---
 
