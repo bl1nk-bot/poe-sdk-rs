@@ -51,7 +51,7 @@ pub fn get(&self, name: &str) -> Option<&Value>
 Example:
 
 ```rust
-use formula_engine::{Context, Value};
+use bl1z::{Context, Value};
 
 let mut ctx = Context::new();
 ctx.set("enabled", Value::Bool(true));

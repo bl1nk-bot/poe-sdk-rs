@@ -65,7 +65,7 @@ let label_formula = r#"if(avg(user.profile.scores) > 88, upper(user.profile.name
 
 ```rust
 use formula_engine::builtins;
-use formula_engine::{evaluate, parse, tokenize, Context, FunctionRegistry, Value};
+use bl1z::{evaluate, parse, tokenize, Context, FunctionRegistry, Value};
 use std::collections::HashMap;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
