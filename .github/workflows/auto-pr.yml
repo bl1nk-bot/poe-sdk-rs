@@ -110,4 +110,21 @@ jobs:
             --body -e "$PR_BODY" \
             --label "$LABELS"
 
+      - name: Send Webhook Notification
+        if: success()
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          TARGET_URL="${WEBHOOK_URL:-$DISCORD_WEBHOOK}"
+          if [ -n "$TARGET_URL" ]; then
+            MESSAGE="📢 **Auto PR Created Successfully!**\nBranch: \`${{ github.ref_name }}\`\n📝 โปรดตรวจสอบคอมม้นใน Pull Request เพื่อดำเนินการรีวิวต่อไป"
+            curl -X POST -H "Content-Type: application/json" \
+              -d "{\"content\": \"$MESSAGE\"}" \
+              "$TARGET_URL"
+          else
+            echo "No Webhook secret found, skipping notification."
+          fi
+
+
 
