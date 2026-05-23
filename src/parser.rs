@@ -183,7 +183,7 @@ impl<'a> Parser<'a> {
                         return Err(FormulaError::new(
                             ErrorKind::ParseError,
                             "E201",
-                            "Expected identifier after dot",
+                            "ต้องการ identifier หลังจุด",
                             Some(field_tok.span),
                         ));
                     }
