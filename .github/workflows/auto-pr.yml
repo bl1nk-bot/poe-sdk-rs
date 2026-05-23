@@ -58,26 +58,56 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # วิเคราะห์และเลือก Label ให้สอดคล้องกับประเภทของ Branch
+          # ตั้งค่าพื้นฐานเบื้องต้น
           BRANCH_NAME="${{ github.ref_name }}"
-          LABEL="auto-pr"
+          PR_TITLE="${BRANCH_NAME}: Auto PR from Fork"
+          PR_BODY="This PR was automatically created by GitHub Actions after passing formatting, cargo clippy, unit/integration tests, and security audits."
+          LABELS="auto-pr"
           
           if [[ "$BRANCH_NAME" =~ ^(feat|feature)/ ]]; then
-            LABEL="enhancement"
+            LABELS="enhancement"
           elif [[ "$BRANCH_NAME" =~ ^(fix|bug)/ ]]; then
-            LABEL="bug"
+            LABELS="bug"
           elif [[ "$BRANCH_NAME" =~ ^docs/ ]]; then
-            LABEL="documentation"
+            LABELS="documentation"
           fi
           
-          echo "Selected label: $LABEL"
+          # ดึง Open Issues ทั้งหมดจาก Upstream เพื่อจับคู่ข้อมูลอย่างสร้างสรรค์
+          ISSUES_JSON=$(gh issue list --repo bl1nk-bot/bl1z --state open --json number,title,labels --limit 30)
+          
+          # วิเคราะห์หาตัวเลข Phase จากชื่อ Branch (เช่น '9' หรือ '8')
+          PHASE_NUM=$(echo "$BRANCH_NAME" | grep -oE '[0-9]+' | head -n 1)
+          
+          if [ -n "$PHASE_NUM" ]; then
+            # ค้นหา Issue ที่ระบุถึง Phase นั้น ๆ
+            MATCHED_ISSUE=$(echo "$ISSUES_JSON" | jq -c --arg num "$PHASE_NUM" '.[] | select(.title | test("Phase " + $num))' | head -n 1)
+            
+            if [ -n "$MATCHED_ISSUE" ] && [ "$MATCHED_ISSUE" != "null" ]; then
+              ISSUE_NO=$(echo "$MATCHED_ISSUE" | jq -r '.number')
+              ISSUE_TITLE=$(echo "$MATCHED_ISSUE" | jq -r '.title')
+              
+              PR_TITLE="feat(v2): implement $ISSUE_TITLE (Auto PR)"
+              PR_BODY="This PR implements/fixes features related to **$ISSUE_TITLE** (Issue #$ISSUE_NO).\n\n### 🔗 Related Issues\n- Resolves #$ISSUE_NO\n\n_Auto-generated after successfully passing formatting checks, clippy lints, unit/integration tests, and security audits._"
+              
+              # ดึงป้ายกำกับของ Issue นั้นมาเป็นส่วนหนึ่งของ PR ด้วย
+              ISSUE_LABELS=$(echo "$MATCHED_ISSUE" | jq -r '.labels[].name' | tr '\n' ',' | sed 's/,$//')
+              if [ -n "$ISSUE_LABELS" ]; then
+                LABELS="$LABELS,$ISSUE_LABELS"
+              fi
+            fi
+          fi
+          
+          # ทำความสะอาดและสลับคำซ้ำใน Labels
+          LABELS=$(echo "$LABELS" | tr ',' '\n' | sort -u | tr '\n' ',' | sed 's/,$//')
+          echo "Selected labels: $LABELS"
 
-          # ส่ง PR ไปยัง upstream repository พร้อมติด label
+          # ส่ง PR ไปยัง upstream repository
           gh pr create \
             --repo bl1nk-bot/bl1z \
             --head "${{ github.repository_owner }}:${{ github.ref_name }}" \
             --base main \
-            --title "${{ github.ref_name }}: Auto PR from Fork" \
-            --body "This PR was automatically created by GitHub Actions after passing fmt, test, and security audit." \
-            --label "$LABEL"
+            --title "$PR_TITLE" \
+            --body -e "$PR_BODY" \
+            --label "$LABELS"
+
 
