@@ -31,6 +31,7 @@ pub enum TokenKind {
     LBrace,     // {
     RBrace,     // }
     Colon,      // :
+    Arrow,      // => (for lambda expressions, Phase 9)
     Eof,        // end of file
 }
 
@@ -258,11 +259,14 @@ impl<'a> Lexer<'a> {
                     if self.peek() == Some('=') {
                         self.advance();
                         self.push_token(TokenKind::EqEq, "==".to_string(), sl, sc);
+                    } else if self.peek() == Some('>') {
+                        self.advance();
+                        self.push_token(TokenKind::Arrow, "=>".to_string(), sl, sc);
                     } else {
                         return Err(FormulaError::new(
                             ErrorKind::LexError,
                             "E101",
-                            "พบ '=' โดยไม่มี '=' ตามหลัง (อาจหมายถึง ==?)",
+                            "พบ '=' โดยไม่มี '=' ตามหลัง (อาจหมายถึง == หรือ =>?)",
                             Some(self.make_span(sl, sc)),
                         ));
                     }

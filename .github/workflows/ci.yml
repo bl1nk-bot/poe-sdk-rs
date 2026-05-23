@@ -108,14 +108,12 @@ jobs:
         env:
           INSTA_UPDATE: 1
 
-  # Security audit (optional, can be enabled later)
-  # audit:
-  #   name: Security Audit
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       - uses: actions/checkout@v6
-  #     - name: Install cargo-audit
-  #       run: cargo install cargo-audit
-  #     - name: Run audit
-  #       run: cargo audit
+  # Security audit
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Run audit
+        uses: actions-rust-lang/audit@v1

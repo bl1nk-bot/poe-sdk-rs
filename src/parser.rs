@@ -258,6 +258,22 @@ impl<'a> Parser<'a> {
             )),
             TokenKind::Identifier => {
                 let name = tok.lexeme.clone();
+                // Phase 9: Check for single-identifier lambda: x => x + 1
+                if self.peek() == TokenKind::Arrow {
+                    self.advance(); // consume '=>'
+                    let body = self.parse_expression()?;
+                    let span = Span {
+                        start: span.start,
+                        end: body.meta.span.end,
+                    };
+                    return Ok(SpannedExpr::new(
+                        Expr::Lambda {
+                            params: vec![name],
+                            body: Box::new(body),
+                        },
+                        span,
+                    ));
+                }
                 // ถ้าเจอ '(' ข้างหน้า คือ function call
                 if self.peek() == TokenKind::LParen {
                     self.advance(); // กิน '('
@@ -280,8 +296,88 @@ impl<'a> Parser<'a> {
                 }
             }
             TokenKind::LParen => {
+                // Phase 9: Check for parenthesized lambda: (x, y) => body
+                let lparen_span = span;
+                let mut params = Vec::new();
+                let start_pos = self.pos;
+
+                // Check if immediate ')' (empty grouping) or identifier (lambda params)
+                if self.peek() == TokenKind::RParen {
+                    // Empty () - not a lambda yet, check for =>
+                    self.advance(); // consume ')'
+                    if self.peek() == TokenKind::Arrow {
+                        self.advance(); // consume '=>'
+                        let body = self.parse_expression()?;
+                        let span = Span {
+                            start: lparen_span.start,
+                            end: body.meta.span.end,
+                        };
+                        return Ok(SpannedExpr::new(
+                            Expr::Lambda {
+                                params: vec![],
+                                body: Box::new(body),
+                            },
+                            span,
+                        ));
+                    }
+                    // Rollback and let normal grouping handle it
+                    self.pos = start_pos;
+                } else if self.peek() == TokenKind::Identifier {
+                    // Try to parse as lambda params: id (',' id)* ')'
+                    let first_param = self.advance().lexeme.clone();
+                    params.push(first_param);
+
+                    let mut valid_params = true;
+                    while self.peek() == TokenKind::Comma {
+                        self.advance();
+                        if self.peek() == TokenKind::Identifier {
+                            params.push(self.advance().lexeme.clone());
+                        } else {
+                            valid_params = false;
+                            break;
+                        }
+                    }
+
+                    if valid_params && self.peek() == TokenKind::RParen {
+                        self.advance(); // consume ')'
+                        if self.peek() == TokenKind::Arrow {
+                            self.advance(); // consume '=>'
+                            let mut unique_params = std::collections::HashSet::new();
+                            for param in &params {
+                                if !unique_params.insert(param.clone()) {
+                                    return Err(FormulaError::new(
+                                        ErrorKind::ParseError,
+                                        "E209",
+                                        &format!("พารามิเตอร์ซ้ำกันใน lambda: '{}'", param),
+                                        Some(lparen_span),
+                                    ));
+                                }
+                            }
+                            let body = self.parse_expression()?;
+                            let span = Span {
+                                start: lparen_span.start,
+                                end: body.meta.span.end,
+                            };
+                            return Ok(SpannedExpr::new(
+                                Expr::Lambda {
+                                    params,
+                                    body: Box::new(body),
+                                },
+                                span,
+                            ));
+                        }
+                    }
+                    // Rollback and let normal grouping handle it
+                    self.pos = start_pos;
+                }
+
+                // Not a lambda - parse as grouping expression
                 let inner = self.parse_expression()?;
                 self.expect(TokenKind::RParen, "ต้องการ ')'")?;
+                let span = Span {
+                    start: lparen_span.start,
+                    end: inner.meta.span.end,
+                };
                 Ok(SpannedExpr::new(Expr::Grouping(Box::new(inner)), span))
             }
             TokenKind::LBracket => {

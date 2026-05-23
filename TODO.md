@@ -29,33 +29,33 @@
 
 > ⚠️ **Depends on**: Phase 8 (PropertyAccess), Phase 8.5 (Context Scoping), BuiltinFunction refactor
 
-- [ ] **9.1** เพิ่ม `TokenKind::Arrow` (`=>`) ใน lexer
-- [ ] **9.2** สร้าง `Expr::Lambda { params: Vec<String>, body: Box<SpannedExpr> }` ใน AST
-- [ ] **9.3** Parser: `parse_lambda()` — syntax: `(x, y) => x + y`
-- [ ] **9.4** สร้าง `Value::Lambda { params, body, captured_scope }` หรือ `Value::Closure { ... }`
-- [ ] **9.5** Evaluator: `eval_lambda()` — สร้าง closure จับ scope
-- [ ] **9.6** Evaluator: `eval_call()` — apply closure ด้วย arguments
-- [ ] **9.7** Implement builtin: `map(array, lambda)`, `filter(array, lambda)`, `reduce(array, lambda, initial)`
-- [ ] **9.8** Implement builtin: `sort(array)`, `sort(array, comparator_lambda)`
-- [ ] **9.9** Implement builtin: `unique(array)`, `group_by(array, lambda)`
-- [ ] **9.10** Test: closure captures variable, pipeline (map → filter → reduce)
-- [ ] **9.11** Test: nested lambdas, recursive lambdas (optional)
+- [x] **9.1** เพิ่ม `TokenKind::Arrow` (`=>`) ใน lexer
+- [x] **9.2** สร้าง `Expr::Lambda { params: Vec<String>, body: Box<SpannedExpr> }` ใน AST
+- [x] **9.3** Parser: `parse_lambda()` — syntax: `(x, y) => x + y`
+- [x] **9.4** สร้าง `Value::Lambda { params, body, captured_scope }` หรือ `Value::Closure { ... }`
+- [x] **9.5** Evaluator: `eval_lambda()` — สร้าง closure จับ scope
+- [x] **9.6** Evaluator: `eval_call()` — apply closure ด้วย arguments
+- [x] **9.7** Implement builtin: `map(array, lambda)`, `filter(array, lambda)`, `reduce(array, lambda, initial)`
+- [x] **9.8** Implement builtin: `sort(array)`, `sort(array, comparator_lambda)`
+- [x] **9.9** Implement builtin: `unique(array)`, `group_by(array, lambda)`
+- [x] **9.10** Test: closure captures variable, pipeline (map → filter → reduce)
+- [x] **9.11** Test: nested lambdas, recursive lambdas (optional)
 
 ## 🟡 Phase 9.5: BuiltinFunction Trait Refactor 🆕 (1 สัปดาห์)
 
 > ⚠️ **ต้องทำก่อน หรือทำคู่กับ Phase 9** — `fn` pointer จับ state ไม่ได้
 
-- [ ] **9.5.1** เปลี่ยน `BuiltinFunction::call` จาก `fn(&[Value]) -> Result<Value, FormulaError>` เป็น trait:
+- [x] **9.5.1** เปลี่ยน `BuiltinFunction::call` จาก `fn(&[Value]) -> Result<Value, FormulaError>` เป็น trait:
 ```rust
 pub trait Function: Send + Sync {
     fn call(&self, args: &[Value]) -> Result<Value, FormulaError>;
     fn name(&self) -> &str;
 }
 ```
-- [ ] **9.5.2** `FunctionRegistry::register(name, Box<dyn Function>)` — รองรับ stateful functions
-- [ ] **9.5.3** Refactor builtins ทั้งหมด: `struct SumFunction`, `struct AvgFunction`, etc. implements `Function`
-- [ ] **9.5.4** อัพเดท tests ทั้งหมดให้ใช้ trait ใหม่
-- [ ] **9.5.5** Test: custom function with captured state (counter, cache)
+- [x] **9.5.2** `FunctionRegistry::register(name, Box<dyn Function>)` — รองรับ stateful functions
+- [x] **9.5.3** Refactor builtins ทั้งหมด: `struct SumFunction`, `struct AvgFunction`, etc. implements `Function`
+- [x] **9.5.4** อัพเดท tests ทั้งหมดให้ใช้ trait ใหม่
+- [x] **9.5.5** Test: custom function with captured state (counter, cache)
 
 ## 🟡 Phase 10: User-Defined Functions (1 สัปดาห์)
 

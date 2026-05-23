@@ -74,4 +74,10 @@ pub enum Expr {
         object: Box<SpannedExpr>,
         index: Box<SpannedExpr>,
     },
+    /// Lambda expression: (x, y) => x + y
+    /// Phase 9: Lambda & Higher-Order Functions
+    Lambda {
+        params: Vec<String>,
+        body: Box<SpannedExpr>,
+    },
 }

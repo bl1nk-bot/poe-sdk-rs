@@ -2,6 +2,7 @@
 name = "bl1z"
 version = "0.2.0"
 edition = "2021"
+rust-version = "1.90.0"
 authors = ["bl1z Team"]
 description = "A high-performance, extensible formula evaluation engine for Rust"
 license = "MIT OR Apache-2.0"
