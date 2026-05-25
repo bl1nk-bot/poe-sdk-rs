@@ -119,7 +119,7 @@ poe-sdk-rs-fix-pr10/
 
 ## ข้อตกลงการเขียนโค้ด (Coding Conventions)
 
-โปรเจกต์นี้มีข้อตกลงในการพัฒนาที่อ้างอิงตาม [STYLE_GUIDE.md](file:///D:/dev/10/poe-sdk-rs-fix-pr10/STYLE_GUIDE.md):
+โปรเจกต์นี้มีข้อตกลงในการพัฒนาที่อ้างอิงตาม [STYLE.md](file:///D:/dev/10/poe-sdk-rs-fix-pr10/STYLE.md):
 
 ### กฎทั่วไป (General Rules)
 
@@ -183,7 +183,7 @@ poe-sdk-rs-fix-pr10/
 |----------|-------------|
 | [README.md](file:///D:/dev/10/poe-sdk-rs-fix-pr10/README.md) | มีการเปลี่ยนขอบเขตโครงการ ขั้นตอนการติดตั้ง หรือวิธีการรันตัวอย่างคำสั่ง |
 | [AGENTS.md](file:///D:/dev/10/poe-sdk-rs-fix-pr10/AGENTS.md) | มีการปรับโครงสร้างโมดูลหลัก, เวิร์กโฟลว์ หรือคำสั่งในการพัฒนา |
-| [STYLE_GUIDE.md](file:///D:/dev/10/poe-sdk-rs-fix-pr10/STYLE_GUIDE.md) | ข้อกำหนดด้านความกว้างบรรทัด การจัดฟอร์แมต หรือสไตล์โค้ดมีการแก้ไข |
+| [STYLE.md](file:///D:/dev/10/poe-sdk-rs-fix-pr10/STYLE.md) | ข้อกำหนดด้านความกว้างบรรทัด การจัดฟอร์แมต หรือสไตล์โค้ดมีการแก้ไข |
 | [PLAN.md](file:///D:/dev/10/poe-sdk-rs-fix-pr10/PLAN.md) | มีความคืบหน้าของฟีเจอร์ใน V2 Roadmap |
 | [SPEC.md](file:///D:/dev/10/poe-sdk-rs-fix-pr10/SPEC.md) | มีการเปลี่ยนแปลงการออกแบบสถาปัตยกรรมทางเทคนิคหรือข้อมูลจำเพาะระบบสูตรคำนวณ |
 

@@ -80,7 +80,82 @@ impl<'a> Parser<'a> {
 
     /// expression = logical_or
     pub fn parse_expression(&mut self) -> Result<SpannedExpr, FormulaError> {
+        // Phase 10: Check for fn keyword
+        if self.peek() == TokenKind::Fn {
+            return self.parse_function_def();
+        }
         self.parse_logical_or()
+    }
+
+    /// Phase 10: Parse function definition: fn name(params) = body
+    fn parse_function_def(&mut self) -> Result<SpannedExpr, FormulaError> {
+        let fn_span = token_span(self.tokens, self.pos);
+        self.advance(); // consume 'fn'
+
+        // expect function name
+        if self.peek() != TokenKind::Identifier {
+            return Err(FormulaError::new(
+                ErrorKind::ParseError,
+                "E210",
+                "ต้องการชื่อฟังก์ชัน (identifier) หลัง 'fn'",
+                Some(token_span(self.tokens, self.pos)),
+            ));
+        }
+        let name = self.advance().lexeme.clone();
+
+        // expect '('
+        self.expect(TokenKind::LParen, "ต้องการ '(' หลังชื่อฟังก์ชัน")?;
+
+        // parse params
+        let mut params = Vec::new();
+        if self.peek() != TokenKind::RParen {
+            loop {
+                if self.peek() != TokenKind::Identifier {
+                    return Err(FormulaError::new(
+                        ErrorKind::ParseError,
+                        "E210",
+                        "พารามิเตอร์ต้องเป็น identifier",
+                        Some(token_span(self.tokens, self.pos)),
+                    ));
+                }
+                params.push(self.advance().lexeme.clone());
+                if self.peek() == TokenKind::Comma {
+                    self.advance();
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Check for duplicate params
+        let mut unique_params = std::collections::HashSet::new();
+        for param in &params {
+            if !unique_params.insert(param.clone()) {
+                return Err(FormulaError::new(
+                    ErrorKind::ParseError,
+                    "E209",
+                    &format!("พารามิเตอร์ซ้ำกันในฟังก์ชัน: '{}'", param),
+                    Some(fn_span),
+                ));
+            }
+        }
+
+        self.expect(TokenKind::RParen, "ต้องการ ')' หลังพารามิเตอร์")?;
+        self.expect(TokenKind::Eq, "ต้องการ '=' หลังพารามิเตอร์")?;
+
+        let body = self.parse_expression()?;
+        let span = Span {
+            start: fn_span.start,
+            end: body.meta.span.end,
+        };
+        Ok(SpannedExpr::new(
+            Expr::FunctionDef {
+                name,
+                params,
+                body: Box::new(body),
+            },
+            span,
+        ))
     }
 
     /// logical_or = logical_and ('||' logical_and)*
@@ -437,7 +512,34 @@ impl<'a> Parser<'a> {
 
 pub fn parse(tokens: &[Token]) -> Result<SpannedExpr, FormulaError> {
     let mut parser = Parser::new(tokens);
-    let expr = parser.parse_expression()?;
+    let first_expr = parser.parse_expression()?;
+
+    // Phase 10: Check for sequence (semicolons)
+    if parser.peek() == TokenKind::Semicolon {
+        let mut exprs = vec![first_expr];
+        while parser.peek() == TokenKind::Semicolon {
+            parser.advance(); // consume ';'
+            // Allow trailing semicolons
+            if parser.peek() == TokenKind::Eof {
+                break;
+            }
+            exprs.push(parser.parse_expression()?);
+        }
+        if parser.pos < tokens.len() - 1 {
+            return Err(FormulaError::new(
+                ErrorKind::ParseError,
+                "E201",
+                "มี tokens เหลือหลัง parse expression",
+                Some(token_span(tokens, parser.pos)),
+            ));
+        }
+        let span = Span {
+            start: exprs.first().unwrap().meta.span.start,
+            end: exprs.last().unwrap().meta.span.end,
+        };
+        return Ok(SpannedExpr::new(Expr::Sequence(exprs), span));
+    }
+
     if parser.pos < tokens.len() - 1 {
         // -1 เพราะมี EOF
         return Err(FormulaError::new(
@@ -447,7 +549,7 @@ pub fn parse(tokens: &[Token]) -> Result<SpannedExpr, FormulaError> {
             Some(token_span(tokens, parser.pos)),
         ));
     }
-    Ok(expr)
+    Ok(first_expr)
 }
 
 #[cfg(test)]

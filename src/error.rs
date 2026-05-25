@@ -18,6 +18,12 @@ pub enum ErrorKind {
     // Phase 8: Property and index access errors (reserved)
     PropertyNotFound, // E207
     IndexOutOfBounds, // E208
+    // Phase 10: Recursion errors
+    RecursionLimitExceeded, // E303
+    // Phase 12: Serialization errors
+    SerializationError, // E701
+    // Phase 13: Plugin errors
+    PluginError, // E801
 }
 
 /// ข้อผิดพลาดที่เกิดขึ้นใน engine

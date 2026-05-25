@@ -1,5 +1,5 @@
 use crate::ast::{BinaryOp, Expr, SpannedExpr, UnaryOp};
-use crate::context::Context;
+use crate::context::{Context, UserFunction};
 use crate::error::{ErrorKind, FormulaError};
 use crate::functions::FunctionRegistry;
 use crate::span::Span;
@@ -12,19 +12,29 @@ pub fn evaluate(
     ctx: &Context,
     registry: &FunctionRegistry,
 ) -> Result<Value, FormulaError> {
+    let mut ctx_clone = ctx.clone();
+    evaluate_impl(expr, &mut ctx_clone, registry, 0)
+}
+
+/// ประเมินผล SpannedExpr กับ mutable context (สำหรับ UDF registration)
+pub fn evaluate_mut(
+    expr: &SpannedExpr,
+    ctx: &mut Context,
+    registry: &FunctionRegistry,
+) -> Result<Value, FormulaError> {
     evaluate_impl(expr, ctx, registry, 0)
 }
 
 fn evaluate_impl(
     expr: &SpannedExpr,
-    ctx: &Context,
+    ctx: &mut Context,
     registry: &FunctionRegistry,
     depth: usize,
 ) -> Result<Value, FormulaError> {
     if depth > 100 {
         return Err(FormulaError::new(
-            ErrorKind::EvalError,
-            "E302",
+            ErrorKind::RecursionLimitExceeded,
+            "E303",
             "การประมวลผลซ้อนลึกเกินกำหนด (Recursion limit exceeded)",
             Some(expr.meta.span),
         ));
@@ -174,8 +184,88 @@ fn evaluate_impl(
                 captured,
             ))
         }
+        Expr::FunctionDef { name, params, body } => {
+            // Phase 10: Register user-defined function in context
+            let func = UserFunction {
+                name: name.clone(),
+                params: params.clone(),
+                body: Rc::new((**body).clone()),
+            };
+            ctx.set_function(func);
+            Ok(Value::Null)
+        }
+        Expr::Sequence(exprs) => {
+            // Phase 10: Evaluate each expression in sequence, return last result
+            let mut result = Value::Null;
+            for e in exprs {
+                result = evaluate_impl(e, ctx, registry, depth + 1)?;
+            }
+            Ok(result)
+        }
         Expr::FunctionCall { name, args } => {
-            // First, check if function name exists as a variable (might be a lambda)
+            // Special handling for short-circuiting 'if' function (Phase 10 / recursion support)
+            if name == "if" {
+                if args.len() != 3 {
+                    return Err(FormulaError::new(
+                        ErrorKind::FunctionError,
+                        "E503",
+                        &format!(
+                            "ฟังก์ชัน '{}' ต้องการ 3 อาร์กิวเมนต์ แต่ได้ {}",
+                            name,
+                            args.len()
+                        ),
+                        Some(span),
+                    ));
+                }
+                let cond = evaluate_impl(&args[0], ctx, registry, depth + 1)?;
+                match cond {
+                    Value::Bool(true) => {
+                        return evaluate_impl(&args[1], ctx, registry, depth + 1);
+                    }
+                    Value::Bool(false) => {
+                        return evaluate_impl(&args[2], ctx, registry, depth + 1);
+                    }
+                    _ => {
+                        return Err(FormulaError::new(
+                            ErrorKind::FunctionError,
+                            "E501",
+                            "if เงื่อนไขต้องเป็น boolean",
+                            Some(span),
+                        ));
+                    }
+                }
+            }
+
+            // Phase 10: Check user-defined functions first
+            if let Some(user_func) = ctx.get_function(name.as_str()).cloned() {
+                let evaluated_args: Vec<Value> = args
+                    .iter()
+                    .map(|a| evaluate_impl(a, ctx, registry, depth + 1))
+                    .collect::<Result<_, _>>()?;
+
+                if user_func.params.len() != evaluated_args.len() {
+                    return Err(FormulaError::new(
+                        ErrorKind::FunctionError,
+                        "E503",
+                        &format!(
+                            "ฟังก์ชัน '{}' ต้องการ {} อาร์กิวเมนต์ แต่ได้ {}",
+                            name,
+                            user_func.params.len(),
+                            evaluated_args.len()
+                        ),
+                        Some(span),
+                    ));
+                }
+
+                // Create new context with current as parent
+                let mut func_ctx = ctx.clone();
+                for (i, param) in user_func.params.iter().enumerate() {
+                    func_ctx.set(param, evaluated_args[i].clone());
+                }
+                return evaluate_impl(&user_func.body, &mut func_ctx, registry, depth + 1);
+            }
+
+            // Check if function name exists as a variable (might be a lambda)
             if let Some(Value::Lambda(_, _, _)) = ctx.get(name.as_str()) {
                 let func_val = ctx.get(name.as_str()).unwrap().clone();
                 let evaluated_args: Vec<Value> = args
@@ -260,7 +350,7 @@ fn apply_lambda_impl(
             }
 
             // Evaluate body with the lambda context
-            evaluate_impl(body_expr, &lambda_ctx, registry, depth + 1)
+            evaluate_impl(body_expr, &mut lambda_ctx, registry, depth + 1)
         }
         _ => Err(FormulaError::new(
             ErrorKind::TypeError,

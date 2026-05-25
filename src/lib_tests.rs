@@ -755,8 +755,8 @@ fn evaluate_recursion_limit_exceeded() {
 
     assert!(result.is_err());
     let err = result.unwrap_err();
-    assert_eq!(err.kind, ErrorKind::EvalError);
-    assert_eq!(err.code, "E302"); // Recursion limit exceeded
+    assert_eq!(err.kind, ErrorKind::RecursionLimitExceeded);
+    assert_eq!(err.code, "E303"); // Recursion limit exceeded
 }
 
 #[test]
@@ -875,3 +875,117 @@ fn evaluate_unique_with_key_lambda() {
         _ => panic!("Expected Array"),
     }
 }
+
+// -- Phase 10: User-Defined Functions Tests --
+
+fn eval_formula_mut(formula: &str) -> Result<Value, FormulaError> {
+    let tokens = tokenize(formula)?;
+    let ast = parse(&tokens)?;
+    let mut ctx = Context::new();
+    eval::evaluate_mut(&ast, &mut ctx, &prepared_registry())
+}
+
+#[test]
+fn evaluate_user_defined_function_basic() {
+    assert_eq!(
+        eval_formula_mut("fn double(x) = x * 2; double(5)"),
+        Ok(Value::Number(10.0))
+    );
+}
+
+#[test]
+fn evaluate_user_defined_function_two_params() {
+    assert_eq!(
+        eval_formula_mut("fn add(a, b) = a + b; add(3, 4)"),
+        Ok(Value::Number(7.0))
+    );
+}
+
+#[test]
+fn evaluate_user_defined_function_zero_params() {
+    assert_eq!(
+        eval_formula_mut("fn pi_val() = 3.14159; pi_val()"),
+        Ok(Value::Number(3.14159))
+    );
+}
+
+#[test]
+fn evaluate_user_defined_function_with_builtin() {
+    assert_eq!(
+        eval_formula_mut("fn double_len(s) = len(s) * 2; double_len(\"hello\")"),
+        Ok(Value::Number(10.0))
+    );
+}
+
+#[test]
+fn evaluate_user_defined_function_factorial() {
+    assert_eq!(
+        eval_formula_mut("fn factorial(n) = if(n <= 1, 1, n * factorial(n - 1)); factorial(5)"),
+        Ok(Value::Number(120.0))
+    );
+}
+
+#[test]
+fn evaluate_user_defined_function_factorial_base_case() {
+    assert_eq!(
+        eval_formula_mut("fn factorial(n) = if(n <= 1, 1, n * factorial(n - 1)); factorial(1)"),
+        Ok(Value::Number(1.0))
+    );
+}
+
+#[test]
+fn evaluate_user_defined_function_multiple_definitions() {
+    assert_eq!(
+        eval_formula_mut("fn double(x) = x * 2; fn add_one(x) = x + 1; add_one(double(3))"),
+        Ok(Value::Number(7.0))
+    );
+}
+
+#[test]
+fn evaluate_user_defined_function_wrong_arg_count() {
+    let result = eval_formula_mut("fn double(x) = x * 2; double(1, 2)");
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert_eq!(err.kind, ErrorKind::FunctionError);
+    assert_eq!(err.code, "E503");
+}
+
+#[test]
+fn evaluate_user_defined_function_duplicate_params() {
+    let result = eval_formula_mut("fn bad(x, x) = x");
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert_eq!(err.kind, ErrorKind::ParseError);
+    assert_eq!(err.code, "E209");
+}
+
+#[test]
+fn evaluate_user_defined_function_recursion_limit() {
+    let result = eval_formula_mut("fn f(n) = f(n + 1); f(0)");
+    assert!(result.is_err());
+    let err = result.unwrap_err();
+    assert_eq!(err.kind, ErrorKind::RecursionLimitExceeded);
+    assert_eq!(err.code, "E303");
+}
+
+#[test]
+fn evaluate_user_defined_function_with_property_access() {
+    assert_eq!(
+        eval_formula_mut("fn get_name(obj) = obj.name; get_name({name: \"Alice\"})"),
+        Ok(Value::String("Alice".to_string()))
+    );
+}
+
+#[test]
+fn evaluate_sequence_returns_last_value() {
+    assert_eq!(
+        eval_formula_mut("1 + 1; 2 + 2; 3 + 3"),
+        Ok(Value::Number(6.0))
+    );
+}
+
+#[test]
+fn evaluate_trailing_semicolon() {
+    assert_eq!(eval_formula_mut("42;"), Ok(Value::Number(42.0)));
+}
+

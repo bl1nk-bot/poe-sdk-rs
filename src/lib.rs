@@ -106,6 +106,7 @@ pub mod eval;
 pub mod functions;
 pub mod lexer;
 pub mod parser;
+pub mod plugins;
 pub mod profiling;
 pub mod span;
 pub mod value;
@@ -115,9 +116,11 @@ pub use ast::Expr;
 pub use context::Context;
 pub use error::FormulaError;
 pub use eval::evaluate;
+pub use eval::evaluate_mut;
 pub use functions::FunctionRegistry;
 pub use lexer::tokenize;
 pub use parser::parse;
+pub use plugins::{Plugin, PluginManager};
 pub use value::Value;
 
 /// Tokenizes a formula string into a sequence of tokens with span information.

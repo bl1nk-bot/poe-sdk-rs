@@ -80,4 +80,14 @@ pub enum Expr {
         params: Vec<String>,
         body: Box<SpannedExpr>,
     },
+    /// User-defined function definition: fn name(params) = body
+    /// Phase 10: User-Defined Functions
+    FunctionDef {
+        name: String,
+        params: Vec<String>,
+        body: Box<SpannedExpr>,
+    },
+    /// Sequence of expressions separated by ';'
+    /// Phase 10: Enables multi-expression evaluation (fn defs + usage)
+    Sequence(Vec<SpannedExpr>),
 }

@@ -32,6 +32,9 @@ pub enum TokenKind {
     RBrace,     // }
     Colon,      // :
     Arrow,      // => (for lambda expressions, Phase 9)
+    Fn,         // fn (Phase 10: user-defined functions)
+    Eq,         // = (Phase 10: function definition assignment)
+    Semicolon,  // ; (Phase 10: expression separator)
     Eof,        // end of file
 }
 
@@ -123,6 +126,7 @@ impl<'a> Lexer<'a> {
             "true" => TokenKind::True,
             "false" => TokenKind::False,
             "null" => TokenKind::Null,
+            "fn" => TokenKind::Fn,
             _ => TokenKind::Identifier,
         };
         self.push_token(kind, lexeme, start_line, start_col);
@@ -263,12 +267,8 @@ impl<'a> Lexer<'a> {
                         self.advance();
                         self.push_token(TokenKind::Arrow, "=>".to_string(), sl, sc);
                     } else {
-                        return Err(FormulaError::new(
-                            ErrorKind::LexError,
-                            "E101",
-                            "พบ '=' โดยไม่มี '=' ตามหลัง (อาจหมายถึง == หรือ =>?)",
-                            Some(self.make_span(sl, sc)),
-                        ));
+                        // Phase 10: Single '=' is now valid for function definitions
+                        self.push_token(TokenKind::Eq, "=".to_string(), sl, sc);
                     }
                 }
                 '<' => {
@@ -357,6 +357,12 @@ impl<'a> Lexer<'a> {
                     let sc = self.col;
                     self.advance();
                     self.push_token(TokenKind::RBrace, "}".to_string(), sl, sc);
+                }
+                ';' => {
+                    let sl = self.line;
+                    let sc = self.col;
+                    self.advance();
+                    self.push_token(TokenKind::Semicolon, ";".to_string(), sl, sc);
                 }
                 ':' => {
                     let sl = self.line;
@@ -459,12 +465,10 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_single_equals() {
-        let result = tokenize("a = b");
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert_eq!(err.kind, ErrorKind::LexError);
-        assert_eq!(err.code, "E101");
+    fn test_single_equals_is_valid_eq_token() {
+        let tokens = tokenize("a = b").unwrap();
+        assert_eq!(tokens[1].kind, TokenKind::Eq);
+        assert_eq!(tokens[1].lexeme, "=");
     }
 
     // -- Tests for LBracket/RBracket (added in Phase 6.1) --

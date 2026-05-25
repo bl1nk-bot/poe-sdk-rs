@@ -1,6 +1,21 @@
+use crate::ast::SpannedExpr;
 use crate::value::Value;
 use std::collections::BTreeMap;
 use std::rc::Rc;
+
+/// User-defined function (Phase 10)
+///
+/// Stores the function name, parameter list, and body expression.
+/// Functions are stored in the Context and can be called like built-in functions.
+#[derive(Debug, Clone)]
+pub struct UserFunction {
+    /// ชื่อฟังก์ชัน
+    pub name: String,
+    /// รายชื่อพารามิเตอร์
+    pub params: Vec<String>,
+    /// Body expression
+    pub body: Rc<SpannedExpr>,
+}
 
 /// Execution context for storing variables and constants.
 ///
@@ -56,6 +71,7 @@ use std::rc::Rc;
 #[derive(Debug, Clone)]
 pub struct Context {
     variables: BTreeMap<String, Value>,
+    functions: BTreeMap<String, UserFunction>,
     parent: Option<Rc<Context>>,
 }
 
@@ -72,6 +88,7 @@ impl Context {
     pub fn new() -> Self {
         Self {
             variables: BTreeMap::new(),
+            functions: BTreeMap::new(),
             parent: None,
         }
     }
@@ -105,6 +122,7 @@ impl Context {
     pub fn with_parent(parent: Context) -> Self {
         Self {
             variables: BTreeMap::new(),
+            functions: BTreeMap::new(),
             parent: Some(Rc::new(parent)),
         }
     }
@@ -228,6 +246,60 @@ impl Context {
             None => 0,
             Some(parent) => 1 + parent.depth(),
         }
+    }
+
+    /// Registers a user-defined function in the current scope.
+    ///
+    /// Phase 10: User-Defined Functions
+    ///
+    /// # Arguments
+    /// * `func` - The UserFunction to register
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bl1z::{Context, Value};
+    /// use bl1z::context::UserFunction;
+    /// use bl1z::ast::SpannedExpr;
+    /// use bl1z::ast::Expr;
+    /// use bl1z::span::{Span, Position};
+    /// use std::rc::Rc;
+    ///
+    /// let mut ctx = Context::new();
+    /// let body = SpannedExpr::new(
+    ///     Expr::Variable("x".to_string()),
+    ///     Span::new(Position { line: 1, column: 1 }, Position { line: 1, column: 2 }),
+    /// );
+    /// let func = UserFunction {
+    ///     name: "double".to_string(),
+    ///     params: vec!["x".to_string()],
+    ///     body: Rc::new(body),
+    /// };
+    /// ctx.set_function(func);
+    /// assert!(ctx.get_function("double").is_some());
+    /// ```
+    pub fn set_function(&mut self, func: UserFunction) {
+        self.functions.insert(func.name.clone(), func);
+    }
+
+    /// Retrieves a user-defined function by walking up the parent chain.
+    ///
+    /// Phase 10: User-Defined Functions
+    ///
+    /// # Arguments
+    /// * `name` - Function name to look up
+    ///
+    /// # Returns
+    /// * `Some(&UserFunction)` - Reference to the registered function
+    /// * `None` - Function not found in any scope
+    pub fn get_function(&self, name: &str) -> Option<&UserFunction> {
+        if let Some(func) = self.functions.get(name) {
+            return Some(func);
+        }
+        if let Some(parent) = &self.parent {
+            return parent.get_function(name);
+        }
+        None
     }
 }
 
