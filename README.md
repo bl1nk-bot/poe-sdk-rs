@@ -328,7 +328,7 @@ cargo test --doc
 ## 🙏 ขอบคุณ
 
 - สร้างด้วย ❤️ โดยใช้ [Rust](https://www.rust-lang.org/)
-- ได้รับแรงบันดาลใจจาก Notion formula engine
+- ได้รับแรงบันดาลใจจาก Notion bl1z
 - พัฒนาสำหรับ POE SDK ecosystem
 
 ---

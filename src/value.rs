@@ -6,7 +6,7 @@ use std::rc::Rc;
 /// Phase 9: Lambda & Higher-Order Functions
 pub type CapturedScope = std::collections::BTreeMap<String, Value>;
 
-/// Represents a value in the formula engine.
+/// Represents a value in the bl1z.
 ///
 /// Values are the result of evaluating expressions and can be used
 /// as function arguments or stored in contexts.

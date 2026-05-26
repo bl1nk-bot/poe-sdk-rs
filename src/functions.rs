@@ -22,7 +22,7 @@ pub trait Function: Send + Sync {
 
 /// Represents a built-in function that can be called during evaluation.
 ///
-/// Functions are the primary extension mechanism of the formula engine.
+/// Functions are the primary extension mechanism of the bl1z.
 /// Each function has a name, expected number of arguments (arity), and
 /// an implementation that takes arguments and returns a result.
 ///

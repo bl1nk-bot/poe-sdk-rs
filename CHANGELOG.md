@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-05-07
 
 ### Added
-- **Core Formula Engine**: Complete implementation of lexer, parser, AST, and evaluator
+- **Core bl1z**: Complete implementation of lexer, parser, AST, and evaluator
 - **Data Types**: Support for Number, String, Bool, Null, Array, and Map types
 - **Array Literals**: Syntax `[1, 2, 3]` with nested array support
 - **Map Literals**: Syntax `{key: "value"}` for object-like data structures

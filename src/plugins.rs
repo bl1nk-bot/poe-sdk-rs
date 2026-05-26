@@ -1,12 +1,12 @@
 //! Plugin SDK Foundation (Phase 13)
 //!
-//! ระบบปลั๊กอินเพื่อให้ third-party ขยายความสามารถของ formula engine ได้
+//! ระบบปลั๊กอินเพื่อให้ third-party ขยายความสามารถของ bl1z ได้
 //! ปลั๊กอินสามารถเพิ่มฟังก์ชันใหม่ลงใน engine ผ่าน trait `Plugin`
 
 use crate::error::{ErrorKind, FormulaError};
 use crate::functions::{BuiltinFunction, FunctionRegistry};
 
-/// Trait สำหรับ plugin ของ formula engine
+/// Trait สำหรับ plugin ของ bl1z
 ///
 /// Plugin เป็นหน่วยขยายที่ third-party สามารถสร้างเพื่อเพิ่มฟังก์ชัน
 /// ใหม่ให้กับ engine ได้
