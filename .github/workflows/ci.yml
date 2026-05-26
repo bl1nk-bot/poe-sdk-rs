@@ -111,14 +111,79 @@ jobs:
         env:
           INSTA_UPDATE: 1
 
-  # Security audit (optional, can be enabled later)
-  # audit:
-  #   name: Security Audit
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       - uses: actions/checkout@v6
-  #     - name: Install cargo-audit
-  #       run: cargo install cargo-audit
-  #     - name: Run audit
-  #       run: cargo audit
+  # Security audit
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Run audit
+        uses: actions-rust-lang/audit@v1
+
+  # Auto release and notification when main CI passes
+  release:
+    name: Auto Release & Tag
+    runs-on: ubuntu-latest
+    needs: [test, audit, examples]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get Version from Cargo.toml
+        id: get_version
+        run: |
+          VERSION=$(grep -m1 '^version = ' Cargo.toml | cut -d '"' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if Tag Exists
+        id: check_tag
+        run: |
+          git fetch --tags
+          if git rev-parse "v${{ steps.get_version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Git Tag and Push
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ steps.get_version.outputs.version }}"
+          git push origin "v${{ steps.get_version.outputs.version }}"
+
+      - name: Create GitHub Release
+        if: steps.check_tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.get_version.outputs.version }}" \
+            --title "Release v${{ steps.get_version.outputs.version }}" \
+            --notes "Automated public release of version v${{ steps.get_version.outputs.version }} after passing all CI/CD validations."
+
+      - name: Send Webhook Notification
+        if: always()
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          # เลือกใช้งาน URL ที่มี
+          TARGET_URL="${WEBHOOK_URL:-$DISCORD_WEBHOOK}"
+          if [ -n "$TARGET_URL" ]; then
+            MESSAGE="🚀 **Auto Release Success!** Version v${{ steps.get_version.outputs.version }} has been published.\n📝 ให้ตรวจสอบคอมม้นเพื่อเช็ครายละเอียดเพิ่มเติม"
+            curl -X POST -H "Content-Type: application/json" \
+              -d "{\"content\": \"$MESSAGE\"}" \
+              "$TARGET_URL"
+          else
+            echo "No Webhook secret found, skipping notification."
+          fi
+

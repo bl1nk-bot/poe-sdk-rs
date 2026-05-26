@@ -1,3 +1,11 @@
+use crate::ast::SpannedExpr;
+use std::rc::Rc;
+
+/// Represents a captured scope snapshot for closures.
+/// Stores a copy of variables visible at lambda creation time.
+/// Phase 9: Lambda & Higher-Order Functions
+pub type CapturedScope = std::collections::BTreeMap<String, Value>;
+
 /// Represents a value in the formula engine.
 ///
 /// Values are the result of evaluating expressions and can be used
@@ -43,7 +51,7 @@
 /// map.insert("age".to_string(), Value::Number(30.0));
 /// let map_val = Value::Map(map);
 /// ```
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Value {
     /// 64-bit floating point number for mathematical calculations.
     ///
@@ -109,4 +117,90 @@ pub enum Value {
     /// let person_val = Value::Map(person);
     /// ```
     Map(std::collections::HashMap<String, Value>),
+
+    /// A closure: captures parameters, body, and the lexical scope.
+    ///
+    /// Phase 9: Lambda & Higher-Order Functions
+    /// Used for storing lambda expressions as first-class values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bl1z::Value;
+    /// // Lambda values are created by the evaluator when parsing lambda syntax
+    /// // (x) => x + 1
+    /// ```
+    Lambda(Rc<SpannedExpr>, Vec<String>, CapturedScope),
+}
+
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Number(n) => write!(f, "{}", n),
+            Value::String(s) => write!(f, "{}", s),
+            Value::Bool(b) => write!(f, "{}", b),
+            Value::Null => write!(f, "null"),
+            Value::Array(arr) => {
+                write!(f, "[")?;
+                for (i, v) in arr.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", v)?;
+                }
+                write!(f, "]")
+            }
+            Value::Map(map) => {
+                let mut sorted_keys: Vec<&String> = map.keys().collect();
+                sorted_keys.sort();
+                write!(f, "{{")?;
+                for (i, k) in sorted_keys.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}: {}", k, map.get(*k).unwrap())?;
+                }
+                write!(f, "}}")
+            }
+            Value::Lambda(_, params, _) => {
+                write!(f, "({}) => ...", params.join(", "))
+            }
+        }
+    }
+}
+
+impl std::fmt::Debug for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Number(n) => write!(f, "Number({})", n),
+            Value::String(s) => write!(f, "String({:?})", s),
+            Value::Bool(b) => write!(f, "Bool({})", b),
+            Value::Null => write!(f, "Null"),
+            Value::Array(arr) => {
+                write!(f, "Array([")?;
+                for (i, v) in arr.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{:?}", v)?;
+                }
+                write!(f, "])")
+            }
+            Value::Map(map) => {
+                let mut sorted_keys: Vec<&String> = map.keys().collect();
+                sorted_keys.sort();
+                write!(f, "Map({{")?;
+                for (i, k) in sorted_keys.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{:?}: {:?}", k, map.get(*k).unwrap())?;
+                }
+                write!(f, "}})")
+            }
+            Value::Lambda(_, params, _) => {
+                write!(f, "Lambda(({}) => ...)", params.join(", "))
+            }
+        }
+    }
 }

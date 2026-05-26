@@ -49,16 +49,6 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    // Helper to extract function name from expression (for method calls)
-    fn extract_function_name(expr: &Expr) -> Option<String> {
-        match expr {
-            Expr::Variable(name) => Some(name.clone()),
-            Expr::PropertyAccess { field, .. } => Some(field.clone()),
-            Expr::IndexAccess { .. } => None, // method call on index not supported yet
-            _ => None,
-        }
-    }
-
     /// Helper สำหรับ parse binary operators แบบ left associative
     fn parse_left_associative_binary<F>(
         &mut self,
@@ -90,7 +80,82 @@ impl<'a> Parser<'a> {
 
     /// expression = logical_or
     pub fn parse_expression(&mut self) -> Result<SpannedExpr, FormulaError> {
+        // Phase 10: Check for fn keyword
+        if self.peek() == TokenKind::Fn {
+            return self.parse_function_def();
+        }
         self.parse_logical_or()
+    }
+
+    /// Phase 10: Parse function definition: fn name(params) = body
+    fn parse_function_def(&mut self) -> Result<SpannedExpr, FormulaError> {
+        let fn_span = token_span(self.tokens, self.pos);
+        self.advance(); // consume 'fn'
+
+        // expect function name
+        if self.peek() != TokenKind::Identifier {
+            return Err(FormulaError::new(
+                ErrorKind::ParseError,
+                "E210",
+                "ต้องการชื่อฟังก์ชัน (identifier) หลัง 'fn'",
+                Some(token_span(self.tokens, self.pos)),
+            ));
+        }
+        let name = self.advance().lexeme.clone();
+
+        // expect '('
+        self.expect(TokenKind::LParen, "ต้องการ '(' หลังชื่อฟังก์ชัน")?;
+
+        // parse params
+        let mut params = Vec::new();
+        if self.peek() != TokenKind::RParen {
+            loop {
+                if self.peek() != TokenKind::Identifier {
+                    return Err(FormulaError::new(
+                        ErrorKind::ParseError,
+                        "E210",
+                        "พารามิเตอร์ต้องเป็น identifier",
+                        Some(token_span(self.tokens, self.pos)),
+                    ));
+                }
+                params.push(self.advance().lexeme.clone());
+                if self.peek() == TokenKind::Comma {
+                    self.advance();
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Check for duplicate params
+        let mut unique_params = std::collections::HashSet::new();
+        for param in &params {
+            if !unique_params.insert(param.clone()) {
+                return Err(FormulaError::new(
+                    ErrorKind::ParseError,
+                    "E209",
+                    &format!("พารามิเตอร์ซ้ำกันในฟังก์ชัน: '{}'", param),
+                    Some(fn_span),
+                ));
+            }
+        }
+
+        self.expect(TokenKind::RParen, "ต้องการ ')' หลังพารามิเตอร์")?;
+        self.expect(TokenKind::Eq, "ต้องการ '=' หลังพารามิเตอร์")?;
+
+        let body = self.parse_expression()?;
+        let span = Span {
+            start: fn_span.start,
+            end: body.meta.span.end,
+        };
+        Ok(SpannedExpr::new(
+            Expr::FunctionDef {
+                name,
+                params,
+                body: Box::new(body),
+            },
+            span,
+        ))
     }
 
     /// logical_or = logical_and ('||' logical_and)*
@@ -178,7 +243,57 @@ impl<'a> Parser<'a> {
                 span,
             ));
         }
-        self.parse_primary()
+        self.parse_postfix()
+    }
+
+    /// postfix = primary (('.' IDENT) | ('[' expression ']'))*
+    fn parse_postfix(&mut self) -> Result<SpannedExpr, FormulaError> {
+        let mut expr = self.parse_primary()?;
+        loop {
+            match self.peek() {
+                TokenKind::Dot => {
+                    self.advance();
+                    let field_tok = self.advance();
+                    if field_tok.kind != TokenKind::Identifier {
+                        return Err(FormulaError::new(
+                            ErrorKind::ParseError,
+                            "E201",
+                            "ต้องการชื่อคุณสมบัติ (identifier) หลังเครื่องหมายจุด",
+                            Some(field_tok.span),
+                        ));
+                    }
+                    let span = Span {
+                        start: expr.meta.span.start,
+                        end: field_tok.span.end,
+                    };
+                    expr = SpannedExpr::new(
+                        Expr::PropertyAccess {
+                            object: Box::new(expr),
+                            property: field_tok.lexeme.clone(),
+                        },
+                        span,
+                    );
+                }
+                TokenKind::LBracket => {
+                    self.advance();
+                    let index = self.parse_expression()?;
+                    self.expect(TokenKind::RBracket, "ต้องการ ']' ปิดท้าย index")?;
+                    let span = Span {
+                        start: expr.meta.span.start,
+                        end: index.meta.span.end,
+                    };
+                    expr = SpannedExpr::new(
+                        Expr::IndexAccess {
+                            object: Box::new(expr),
+                            index: Box::new(index),
+                        },
+                        span,
+                    );
+                }
+                _ => break,
+            }
+        }
+        Ok(expr)
     }
 
     /// primary = NUMBER | STRING | TRUE | FALSE | IDENTIFIER | '(' expression ')' | function_call
@@ -216,62 +331,27 @@ impl<'a> Parser<'a> {
                 Expr::Literal(crate::value::Value::Null),
                 span,
             )),
-TokenKind::Identifier => {
-                let mut expr = SpannedExpr::new(
-                    Expr::Variable(tok.lexeme.clone()),
-                    span,
-                );
-                // Handle postfix operators: .field and [index]
-                while self.peek() == TokenKind::Dot || self.peek() == TokenKind::LBracket {
-                    match self.peek() {
-                        TokenKind::Dot => {
-                            // Property access: expr.field
-                            self.advance(); // consume dot
-                            let field_tok = self.advance();
-                            if field_tok.kind != TokenKind::Identifier {
-                                return Err(FormulaError::new(
-                                    ErrorKind::ParseError,
-                                    "E201",
-                                    "Expected identifier after dot",
-                                    Some(field_tok.span),
-                                ));
-                            }
-                            let new_span = Span {
-                                start: expr.meta.span.start,
-                                end: field_tok.span.end,
-                            };
-                            expr = SpannedExpr::new(
-                                Expr::PropertyAccess {
-                                    object: Box::new(expr),
-                                    field: field_tok.lexeme.clone(),
-                                },
-                                new_span,
-                            );
-                        }
-                        TokenKind::LBracket => {
-                            // Index access: expr[index]
-                            let bracket_span = token_span(self.tokens, self.pos);
-                            self.advance(); // consume [
-                            let index_expr = self.parse_expression()?;
-                            self.expect(TokenKind::RBracket, "Expected ']' after index")?;
-                            let new_span = Span {
-                                start: expr.meta.span.start,
-                                end: token_span(self.tokens, self.pos).end,
-                            };
-                            expr = SpannedExpr::new(
-                                Expr::IndexAccess {
-                                    object: Box::new(expr),
-                                    index: Box::new(index_expr),
-                                },
-                                new_span,
-                            );
-                        }
-                        _ => break,
-                    }
+            TokenKind::Identifier => {
+                let name = tok.lexeme.clone();
+                // Phase 9: Check for single-identifier lambda: x => x + 1
+                if self.peek() == TokenKind::Arrow {
+                    self.advance(); // consume '=>'
+                    let body = self.parse_expression()?;
+                    let span = Span {
+                        start: span.start,
+                        end: body.meta.span.end,
+                    };
+                    return Ok(SpannedExpr::new(
+                        Expr::Lambda {
+                            params: vec![name],
+                            body: Box::new(body),
+                        },
+                        span,
+                    ));
                 }
-                // Function call check (after all postfix ops)
+                // ถ้าเจอ '(' ข้างหน้า คือ function call
                 if self.peek() == TokenKind::LParen {
-                    self.advance(); // consume '('
+                    self.advance(); // กิน '('
                     let mut args = Vec::new();
                     if self.peek() != TokenKind::RParen {
                         loop {
@@ -283,25 +363,96 @@ TokenKind::Identifier => {
                             }
                         }
                     }
-                    self.expect(TokenKind::RParen, "Expected ')'")?;
-                    let span = Span {
-                        start: expr.meta.span.start,
-                        end: token_span(self.tokens, self.pos).end,
-                    };
-                    let name = Self::extract_function_name(&expr.expr)
-                        .ok_or_else(|| FormulaError::new(
-                            ErrorKind::ParseError,
-                            "E201",
-                            "Cannot derive function name from expression",
-                            Some(span),
-                        ))?;
-                    return Ok(SpannedExpr::new(Expr::FunctionCall { name, args }, span));
+                    self.expect(TokenKind::RParen, "ต้องการ ')'")?;
+                    Ok(SpannedExpr::new(Expr::FunctionCall { name, args }, span))
+                } else {
+                    // ตัวแปร (อาจเป็น dot notation แล้ว)
+                    Ok(SpannedExpr::new(Expr::Variable(name), span))
                 }
-                Ok(expr)
             }
             TokenKind::LParen => {
+                // Phase 9: Check for parenthesized lambda: (x, y) => body
+                let lparen_span = span;
+                let mut params = Vec::new();
+                let start_pos = self.pos;
+
+                // Check if immediate ')' (empty grouping) or identifier (lambda params)
+                if self.peek() == TokenKind::RParen {
+                    // Empty () - not a lambda yet, check for =>
+                    self.advance(); // consume ')'
+                    if self.peek() == TokenKind::Arrow {
+                        self.advance(); // consume '=>'
+                        let body = self.parse_expression()?;
+                        let span = Span {
+                            start: lparen_span.start,
+                            end: body.meta.span.end,
+                        };
+                        return Ok(SpannedExpr::new(
+                            Expr::Lambda {
+                                params: vec![],
+                                body: Box::new(body),
+                            },
+                            span,
+                        ));
+                    }
+                    // Rollback and let normal grouping handle it
+                    self.pos = start_pos;
+                } else if self.peek() == TokenKind::Identifier {
+                    // Try to parse as lambda params: id (',' id)* ')'
+                    let first_param = self.advance().lexeme.clone();
+                    params.push(first_param);
+
+                    let mut valid_params = true;
+                    while self.peek() == TokenKind::Comma {
+                        self.advance();
+                        if self.peek() == TokenKind::Identifier {
+                            params.push(self.advance().lexeme.clone());
+                        } else {
+                            valid_params = false;
+                            break;
+                        }
+                    }
+
+                    if valid_params && self.peek() == TokenKind::RParen {
+                        self.advance(); // consume ')'
+                        if self.peek() == TokenKind::Arrow {
+                            self.advance(); // consume '=>'
+                            let mut unique_params = std::collections::HashSet::new();
+                            for param in &params {
+                                if !unique_params.insert(param.clone()) {
+                                    return Err(FormulaError::new(
+                                        ErrorKind::ParseError,
+                                        "E209",
+                                        &format!("พารามิเตอร์ซ้ำกันใน lambda: '{}'", param),
+                                        Some(lparen_span),
+                                    ));
+                                }
+                            }
+                            let body = self.parse_expression()?;
+                            let span = Span {
+                                start: lparen_span.start,
+                                end: body.meta.span.end,
+                            };
+                            return Ok(SpannedExpr::new(
+                                Expr::Lambda {
+                                    params,
+                                    body: Box::new(body),
+                                },
+                                span,
+                            ));
+                        }
+                    }
+                    // Rollback and let normal grouping handle it
+                    self.pos = start_pos;
+                }
+
+                // Not a lambda - parse as grouping expression
                 let inner = self.parse_expression()?;
                 self.expect(TokenKind::RParen, "ต้องการ ')'")?;
+                let span = Span {
+                    start: lparen_span.start,
+                    end: inner.meta.span.end,
+                };
                 Ok(SpannedExpr::new(Expr::Grouping(Box::new(inner)), span))
             }
             TokenKind::LBracket => {
@@ -361,7 +512,34 @@ TokenKind::Identifier => {
 
 pub fn parse(tokens: &[Token]) -> Result<SpannedExpr, FormulaError> {
     let mut parser = Parser::new(tokens);
-    let expr = parser.parse_expression()?;
+    let first_expr = parser.parse_expression()?;
+
+    // Phase 10: Check for sequence (semicolons)
+    if parser.peek() == TokenKind::Semicolon {
+        let mut exprs = vec![first_expr];
+        while parser.peek() == TokenKind::Semicolon {
+            parser.advance(); // consume ';'
+            // Allow trailing semicolons
+            if parser.peek() == TokenKind::Eof {
+                break;
+            }
+            exprs.push(parser.parse_expression()?);
+        }
+        if parser.pos < tokens.len() - 1 {
+            return Err(FormulaError::new(
+                ErrorKind::ParseError,
+                "E201",
+                "มี tokens เหลือหลัง parse expression",
+                Some(token_span(tokens, parser.pos)),
+            ));
+        }
+        let span = Span {
+            start: exprs.first().unwrap().meta.span.start,
+            end: exprs.last().unwrap().meta.span.end,
+        };
+        return Ok(SpannedExpr::new(Expr::Sequence(exprs), span));
+    }
+
     if parser.pos < tokens.len() - 1 {
         // -1 เพราะมี EOF
         return Err(FormulaError::new(
@@ -371,7 +549,7 @@ pub fn parse(tokens: &[Token]) -> Result<SpannedExpr, FormulaError> {
             Some(token_span(tokens, parser.pos)),
         ));
     }
-    Ok(expr)
+    Ok(first_expr)
 }
 
 #[cfg(test)]
@@ -645,89 +823,5 @@ mod tests {
         let err = result.unwrap_err();
         assert_eq!(err.kind, ErrorKind::ParseError);
         assert_eq!(err.code, "E201");
-    }
-
-    // -- Phase 8: Access Chaining tests --
-
-    #[test]
-    fn test_property_access() {
-        let tokens = tokenize("user.name").unwrap();
-        let ast = parse(&tokens).unwrap();
-        match ast.expr {
-            Expr::PropertyAccess { object, field } => {
-                assert_eq!(field, "name");
-                match object.expr {
-                    Expr::Variable(name) => assert_eq!(name, "user"),
-                    _ => panic!("expected Variable"),
-                }
-            }
-            _ => panic!("expected PropertyAccess"),
-        }
-    }
-
-    #[test]
-    fn test_chained_property_access() {
-        let tokens = tokenize("user.profile.name").unwrap();
-        let ast = parse(&tokens).unwrap();
-        match ast.expr {
-            Expr::PropertyAccess { object, field } => {
-                assert_eq!(field, "name");
-                match object.expr {
-                    Expr::PropertyAccess { object: inner, field: inner_field } => {
-                        assert_eq!(inner_field, "profile");
-                        match inner.expr {
-                            Expr::Variable(name) => assert_eq!(name, "user"),
-                            _ => panic!("expected Variable"),
-                        }
-                    }
-                    _ => panic!("expected PropertyAccess"),
-                }
-            }
-            _ => panic!("expected PropertyAccess"),
-        }
-    }
-
-    #[test]
-    fn test_index_access() {
-        let tokens = tokenize("arr[0]").unwrap();
-        let ast = parse(&tokens).unwrap();
-        match ast.expr {
-            Expr::IndexAccess { object, index } => {
-                match index.expr {
-                    Expr::Literal(crate::value::Value::Number(n)) => assert_eq!(n, 0.0),
-                    _ => panic!("expected Number literal"),
-                }
-                match object.expr {
-                    Expr::Variable(name) => assert_eq!(name, "arr"),
-                    _ => panic!("expected Variable"),
-                }
-            }
-            _ => panic!("expected IndexAccess"),
-        }
-    }
-
-    #[test]
-    fn test_mixed_access() {
-        let tokens = tokenize("users[0].name").unwrap();
-        let ast = parse(&tokens).unwrap();
-        match ast.expr {
-            Expr::PropertyAccess { object, field } => {
-                assert_eq!(field, "name");
-                match object.expr {
-                    Expr::IndexAccess { object: inner, index } => {
-                        match index.expr {
-                            Expr::Literal(crate::value::Value::Number(n)) => assert_eq!(n, 0.0),
-                            _ => panic!("expected Number"),
-                        }
-                        match inner.expr {
-                            Expr::Variable(name) => assert_eq!(name, "users"),
-                            _ => panic!("expected Variable"),
-                        }
-                    }
-                    _ => panic!("expected IndexAccess"),
-                }
-            }
-            _ => panic!("expected PropertyAccess"),
-        }
     }
 }

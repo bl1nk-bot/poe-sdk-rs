@@ -1,44 +1,42 @@
-version: 2
 updates:
-  # Enable version updates for Cargo.toml
-  - package-ecosystem: "cargo"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 10
-    reviewers:
-      - "billlzzz26"
-    assignees:
-      - "billlzzz26"
-    commit-message:
-      prefix: "deps"
-      include: "scope"
-    labels:
-      - "dependencies"
-      - "rust"
-    groups:
-      # Group Rust dependencies by ecosystem
-      rust-dependencies:
-        patterns:
-          - "*"
-
-  # Enable version updates for GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    reviewers:
-      - "billlzzz26"
-    assignees:
-      - "billlzzz26"
-    commit-message:
-      prefix: "ci"
-      include: "scope"
-    labels:
-      - "github-actions"
-      - "ci"
+- assignees:
+  - billlzzz26
+  commit-message:
+    include: scope
+    prefix: deps
+  directory: /
+  groups:
+    rust-dependencies:
+      patterns:
+      - "*"
+  labels:
+  - dependencies
+  - rust
+  open-pull-requests-limit: 10
+  package-ecosystem: cargo
+  reviewers:
+  - billlzzz26
+  schedule:
+    day: monday
+    interval: weekly
+    time: "09:00"
+- assignees:
+  - billlzzz26
+  commit-message:
+    include: scope
+    prefix: ci
+  directory: /
+  ignore:
+  - dependency-name: "github/gh-aw-actions/**" # Managed by gh aw compile. Version-locked to the gh-aw compiler; do not bump.
+  labels:
+  - github-actions
+  - ci
+  open-pull-requests-limit: 5
+  package-ecosystem: github-actions
+  reviewers:
+  - billlzzz26
+  schedule:
+    day: monday
+    interval: weekly
+    time: "09:00"
+version: 2

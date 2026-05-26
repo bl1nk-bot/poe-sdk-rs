@@ -66,13 +66,28 @@ pub enum Expr {
     Grouping(Box<SpannedExpr>),
     ArrayLiteral(Vec<SpannedExpr>),
     MapLiteral(Vec<(String, SpannedExpr)>),
-    // Phase 8: Access Chaining
     PropertyAccess {
         object: Box<SpannedExpr>,
-        field: String,
+        property: String,
     },
     IndexAccess {
         object: Box<SpannedExpr>,
         index: Box<SpannedExpr>,
     },
+    /// Lambda expression: (x, y) => x + y
+    /// Phase 9: Lambda & Higher-Order Functions
+    Lambda {
+        params: Vec<String>,
+        body: Box<SpannedExpr>,
+    },
+    /// User-defined function definition: fn name(params) = body
+    /// Phase 10: User-Defined Functions
+    FunctionDef {
+        name: String,
+        params: Vec<String>,
+        body: Box<SpannedExpr>,
+    },
+    /// Sequence of expressions separated by ';'
+    /// Phase 10: Enables multi-expression evaluation (fn defs + usage)
+    Sequence(Vec<SpannedExpr>),
 }

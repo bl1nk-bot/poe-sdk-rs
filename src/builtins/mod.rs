@@ -3,6 +3,7 @@
 
 pub mod collection;
 pub mod date;
+pub mod higher_order; // Phase 9: Lambda & higher-order functions
 pub mod logic;
 pub mod math;
 pub mod string; // เพิ่ม
@@ -41,4 +42,13 @@ pub fn register_all(registry: &mut FunctionRegistry) {
     registry.register(date::year());
     registry.register(date::month());
     registry.register(date::day());
+
+    // Phase 9: Lambda & Higher-Order Functions
+    registry.register(higher_order::map_fn());
+    registry.register(higher_order::filter_fn());
+    registry.register(higher_order::reduce_fn());
+    registry.register(higher_order::sort_fn());
+    registry.register(higher_order::sort_with_fn());
+    registry.register(higher_order::unique_fn());
+    registry.register(higher_order::group_by_fn());
 }

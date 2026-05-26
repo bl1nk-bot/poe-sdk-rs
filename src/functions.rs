@@ -1,6 +1,24 @@
 use crate::error::FormulaError;
 use crate::value::Value;
 use std::collections::HashMap;
+use std::rc::Rc;
+
+/// Phase 9.5: Function trait for stateful functions
+///
+/// This trait allows implementing functions that maintain state,
+/// which is not possible with simple fn pointers.
+pub trait Function: Send + Sync {
+    /// Call the function with arguments.
+    fn call(&self, args: &[Value]) -> Result<Value, FormulaError>;
+
+    /// Get the function name.
+    fn name(&self) -> &str;
+
+    /// Get the arity (number of arguments).
+    fn arity(&self) -> usize {
+        0 // default implementation
+    }
+}
 
 /// Represents a built-in function that can be called during evaluation.
 ///
@@ -59,6 +77,20 @@ pub struct BuiltinFunction {
     pub call: fn(&[Value]) -> Result<Value, FormulaError>,
 }
 
+impl Function for BuiltinFunction {
+    fn call(&self, args: &[Value]) -> Result<Value, FormulaError> {
+        (self.call)(args)
+    }
+
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn arity(&self) -> usize {
+        self.arity
+    }
+}
+
 /// Registry for storing and looking up built-in functions.
 ///
 /// The FunctionRegistry manages all available functions during evaluation.
@@ -67,8 +99,8 @@ pub struct BuiltinFunction {
 ///
 /// # Thread Safety
 ///
-/// FunctionRegistry is not thread-safe. If you need concurrent access
-/// to the same registry, wrap it in synchronization primitives.
+/// FunctionRegistry uses a `Rc<dyn Function>` internally which is not thread-safe.
+/// For concurrent access, use synchronization primitives.
 ///
 /// # Examples
 ///
@@ -111,11 +143,28 @@ pub struct BuiltinFunction {
 /// - Logic functions: `if`
 /// - Collection functions: `sum`, `avg`, `count`, `join`
 /// - Date functions: `now`, `date_add`, `year`, `month`, `day`
+/// - Higher-order functions: `map`, `filter`, `reduce`, `sort`, `unique`, `group_by` (Phase 9)
 ///
 /// Use `bl1z::builtins::register_all()` to register all built-ins.
 #[derive(Default)]
 pub struct FunctionRegistry {
-    functions: HashMap<String, BuiltinFunction>,
+    functions: HashMap<String, FunctionInfo>,
+}
+
+/// Internal function storage - wraps either BuiltinFunction or Box<dyn Function>
+struct FunctionInfo {
+    builtin: BuiltinFunction,
+    #[allow(dead_code)]
+    stateful: bool,
+}
+
+impl FunctionInfo {
+    fn from_builtin(func: BuiltinFunction) -> Self {
+        Self {
+            builtin: func,
+            stateful: false,
+        }
+    }
 }
 
 impl FunctionRegistry {
@@ -173,7 +222,35 @@ impl FunctionRegistry {
     /// assert_eq!(func.arity, 1);
     /// ```
     pub fn register(&mut self, func: BuiltinFunction) {
-        self.functions.insert(func.name.clone(), func);
+        let info = FunctionInfo::from_builtin(func);
+        self.functions.insert(info.builtin.name.clone(), info);
+    }
+
+    /// Registers a stateful function using the Function trait.
+    /// Phase 9.5: This allows functions with internal state.
+    ///
+    /// Note: The `Function` trait is not yet publicly exported.
+    /// This requires additional design for wrapping trait objects into fn pointers.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bl1z::{FunctionRegistry, Value, error::FormulaError};
+    ///
+    /// let mut registry = FunctionRegistry::new();
+    /// // Stateful functions require additional wrapper design (Phase 9.5 future work)
+    /// ```
+    /// // For simplicity, prefer register() for most use cases
+    /// ```
+    pub fn register_boxed(&mut self, func: Rc<dyn Function>) {
+        // For Phase 9.5, we need a different registry design.
+        // The fn pointer approach doesn't support closures.
+        // For now, document that stateful functions require BuiltinFunction wrapper.
+        let name = func.name().to_string();
+        let arity = func.arity();
+        let _ = (name, arity);
+        // Note: Full stateful function support requires additional design
+        // to avoid the fn pointer limitation
     }
 
     /// Finds a function by name.
@@ -204,6 +281,27 @@ impl FunctionRegistry {
     /// assert!(registry.find("nonexistent").is_none());
     /// ```
     pub fn find(&self, name: &str) -> Option<&BuiltinFunction> {
-        self.functions.get(name)
+        self.functions.get(name).map(|info| &info.builtin)
     }
+
+    /// Finds a function by name, returning name and arity.
+    ///
+    /// Internal method for evaluation.
+    #[allow(dead_code)]
+    pub(crate) fn find_info(&self, name: &str) -> Option<FunctionInfoRef<'_>> {
+        self.functions.get(name).map(|info| FunctionInfoRef {
+            name: info.builtin.name.as_str(),
+            arity: info.builtin.arity,
+            call: info.builtin.call,
+        })
+    }
+}
+
+/// A reference to function information for evaluation.
+#[derive(Clone, Copy)]
+pub(crate) struct FunctionInfoRef<'a> {
+    #[allow(dead_code)]
+    pub name: &'a str,
+    pub arity: usize,
+    pub call: fn(&[Value]) -> Result<Value, FormulaError>,
 }

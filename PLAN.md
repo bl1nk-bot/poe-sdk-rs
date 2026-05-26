@@ -1,6 +1,6 @@
 # แผนงานแบบเฟส – Session 2 (Advanced Features)
 
-สถานะ: **V1 เสร็จสมบูรณ์** → Session 2 เริ่มต้น
+สถานะ: **V1 เสร็จสมบูรณ์** → Session 2 (Phase 8, 9, 10, 13 ✅ | Phase 11, 12, 14 🚧)
 
 ---
 
@@ -19,53 +19,53 @@
 
 ---
 
-## Phase 8: Access Chaining & Indexing 🚧
+## Phase 8: Access Chaining & Indexing ✅
 
 **Priority:** 🔴 สูงสุด (ทุก use case ต้องการ)
 
 **งาน:**
-- เพิ่ม `PropertyAccess` และ `IndexAccess` ใน AST
-- Lexer: เพิ่ม token `Dot` สำหรับ `.`
-- Parser: สร้าง method `parse_postfix` เพื่อรองรับ chain `expr '.' IDENT` และ `expr '[' expr ']'` (left-associative)
-- Evaluator:
-  - `PropertyAccess`: evaluate object, ถ้าเป็น `Map` ให้ lookup property, ถ้าไม่พบแจ้ง `PropertyNotFound`
-  - `IndexAccess`: evaluate object และ index, ถ้า object เป็น `Array` และ index เป็น `Number` ให้เข้าถึง element, ตรวจสอบ bounds
-- Error: `PropertyNotFound`, `IndexOutOfBounds`
-- Tests: nested objects, mixed chain, error cases
+- [x] เพิ่ม `PropertyAccess` และ `IndexAccess` ใน AST
+- [x] Lexer: เพิ่ม token `Dot` สำหรับ `.`
+- [x] Parser: สร้าง method `parse_postfix` เพื่อรองรับ chain `expr '.' IDENT` และ `expr '[' expr ']'` (left-associative)
+- [x] Evaluator:
+  - [x] `PropertyAccess`: evaluate object, ถ้าเป็น `Map` ให้ lookup property, ถ้าไม่พบแจ้ง `PropertyNotFound`
+  - [x] `IndexAccess`: evaluate object และ index, ถ้า object เป็น `Array` และ index เป็น `Number` ให้เข้าถึง element, ตรวจสอบ bounds
+- [x] Error: `PropertyNotFound`, `IndexOutOfBounds`
+- [x] Tests: nested objects, mixed chain, error cases
 
 **Files:** `ast.rs`, `lexer.rs`, `parser.rs`, `eval.rs`, `error.rs`
 
 ---
 
-## Phase 9: Lambda & Higher-Order Functions 🚧
+## Phase 9: Lambda & Higher-Order Functions ✅
 
 **Priority:** 🔴 สูงสุด (หัวใจ functional)
 
 **งาน:**
-- `LambdaExpr` ใน AST: `params: Vec<String>`, `body: Box<SpannedExpr>`
-- Lexer: token `Arrow` (`=>`)
-- Parser: `'(' params ')' '=>' expression` (lambda เป็น expression)
-- Evaluation:
-  - สร้าง closure struct `Lambda` ที่เก็บ params, body, และ environment (copy ของ context ปัจจุบัน)
-  - เมื่อถูกเรียกผ่าน `map`/`filter`/`reduce` ให้ bind arguments เข้ากับ params แล้ว evaluate body
-- Built-in functions: `map`, `filter`, `reduce`, `sort`, `group_by`, `unique` (รับ lambda เป็น argument)
-- Tests: lambda ทุก arity, nested lambda, higher-order กับ array เปล่า, closure จับตัวแปร
+- [x] `LambdaExpr` ใน AST: `params: Vec<String>`, `body: Box<SpannedExpr>`
+- [x] Lexer: token `Arrow` (`=>`)
+- [x] Parser: `'(' params ')' '=>' expression` (lambda เป็น expression)
+- [x] Evaluation:
+  - [x] สร้าง closure struct `Lambda` ที่เก็บ params, body, และ environment (copy ของ context ปัจจุบัน)
+  - [x] เมื่อถูกเรียกผ่าน `map`/`filter`/`reduce` ให้ bind arguments เข้ากับ params แล้ว evaluate body
+- [x] Built-in functions: `map`, `filter`, `reduce`, `sort`, `group_by`, `unique` (รับ lambda เป็น argument)
+- [x] Tests: lambda ทุก arity, nested lambda, higher-order กับ array เปล่า, closure จับตัวแปร
 
 **Files:** `ast.rs`, `lexer.rs`, `parser.rs`, `eval.rs`, `builtins/functional.rs`
 
 ---
 
-## Phase 10: User-Defined Functions 🚧
+## Phase 10: User-Defined Functions ✅
 
 **Priority:** 🟡 รองจาก Lambda
 
 **งาน:**
-- Syntax: `fn name(params) = expression`
-- Parser: `FunctionDef` ใน AST
-- Context: เก็บ `HashMap<String, UserFunction>`
-- Evaluation: เมื่อเจอ `FunctionCall` ที่ชื่อตรงกับ UDF ให้ bind arguments เข้ากับ params แล้ว evaluate body
-- Recursion limit (configurable) เพื่อป้องกัน stack overflow
-- Tests: factorial, mutual recursion, edge cases (recursion limit)
+- [x] Syntax: `fn name(params) = expression`
+- [x] Parser: `FunctionDef` ใน AST
+- [x] Context: เก็บ `HashMap<String, UserFunction>`
+- [x] Evaluation: เมื่อเจอ `FunctionCall` ที่ชื่อตรงกับ UDF ให้ bind arguments เข้ากับ params แล้ว evaluate body
+- [x] Recursion limit (configurable) เพื่อป้องกัน stack overflow
+- [x] Tests: factorial, mutual recursion, edge cases (recursion limit)
 
 **Files:** `functions.rs`, `context.rs`, `parser.rs`, `eval.rs`
 
@@ -106,15 +106,15 @@
 
 ---
 
-## Phase 13: Plugin SDK Foundation 🚧
+## Phase 13: Plugin SDK Foundation ✅
 
 **Priority:** 🟢 (เปิด extensibility)
 
 **งาน:**
-- `trait Plugin` และ `PluginManager` (ตาม SPEC)
-- `FunctionRegistry::import_plugin(&mut self, plugin: &dyn Plugin)`
-- Plugin conflict resolution (name collision → error)
-- Tests: register plugin, call plugin function
+- [x] `trait Plugin` และ `PluginManager` (ตาม SPEC)
+- [x] `FunctionRegistry::import_plugin(&mut self, plugin: &dyn Plugin)` (หมายเหตุ: ใช้ `merge_functions` บน `PluginManager` เพื่อดึงฟังก์ชันเข้าสู่ registry)
+- [x] Plugin conflict resolution (name collision → error)
+- [x] Tests: register plugin, call plugin function
 - **ไม่อยู่ใน scope:** WASM, sandbox, dynamic loading
 
 **Files:** `plugins.rs`, `functions.rs`, `lib.rs`
