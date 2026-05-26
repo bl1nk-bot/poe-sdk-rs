@@ -116,7 +116,7 @@ jobs:
             --label "$LABELS"
 
       - name: Send Webhook Notification
-        if: success()
+        if: success() && steps.check_pr.outputs.exists == '0'
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
