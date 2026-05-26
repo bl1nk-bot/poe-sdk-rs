@@ -1,0 +1,12 @@
+<type>(Phase <number>): <title>
+
+# ----- Commit Rules -----
+# 1. Header (first line) MUST NOT exceed 50 characters.
+# 2. Format: <type>(Phase <N>): <title>
+#    Example: feat(Phase 8): add property access
+# 3. Allowed <type>: feat, fix, ci, docs, style, refactor, test, chore
+# ------------------------
+
+# Describe "Why" and "Impact"
+# - List of changes...
+# - Reference Issue or Task ID (if any)

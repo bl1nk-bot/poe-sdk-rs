@@ -527,7 +527,7 @@ fn evaluate_property_not_found_returns_property_not_found_error() {
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert_eq!(err.kind, ErrorKind::PropertyNotFound);
-    assert_eq!(err.code, "E207");
+    assert_eq!(err.code, "E307");
 }
 
 #[test]
@@ -567,7 +567,7 @@ fn evaluate_index_out_of_bounds_returns_index_out_of_bounds_error() {
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert_eq!(err.kind, ErrorKind::IndexOutOfBounds);
-    assert_eq!(err.code, "E208");
+    assert_eq!(err.code, "E308");
 }
 
 #[test]
@@ -576,7 +576,7 @@ fn evaluate_index_negative_returns_index_out_of_bounds_error() {
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert_eq!(err.kind, ErrorKind::IndexOutOfBounds);
-    assert_eq!(err.code, "E208");
+    assert_eq!(err.code, "E308");
 }
 
 #[test]
@@ -598,7 +598,7 @@ fn evaluate_index_with_non_number_returns_type_error() {
 }
 
 #[test]
-fn evaluate_index_on_map_returns_type_error() {
+fn evaluate_indexonmapreturnstype_rror() {
     let result = eval_formula("{a: 1}[0]");
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -607,7 +607,7 @@ fn evaluate_index_on_map_returns_type_error() {
 }
 
 #[test]
-fn evaluate_chained_property_and_index_returns_nested_value() {
+fn evaluate_chainedpropertyandindexreturnsnested_alue() {
     assert_eq!(
         eval_formula("{users: [{name: \"Alice\"}, {name: \"Bob\"}]}.users[0].name"),
         Ok(Value::String("Alice".to_string()))
@@ -615,7 +615,7 @@ fn evaluate_chained_property_and_index_returns_nested_value() {
 }
 
 #[test]
-fn evaluate_deeply_nested_property_access_returns_leaf_value() {
+fn evaluate_deeplynestedpropertyaccessreturnsleaf_alue() {
     assert_eq!(
         eval_formula("{a: {b: {c: 42}}}.a.b.c"),
         Ok(Value::Number(42.0))
@@ -623,12 +623,12 @@ fn evaluate_deeply_nested_property_access_returns_leaf_value() {
 }
 
 #[test]
-fn evaluate_index_with_expression_returns_computed_element() {
+fn evaluate_indexwithexpressionreturnscomputed_lement() {
     assert_eq!(eval_formula("[10, 20, 30][1 + 1]"), Ok(Value::Number(30.0)));
 }
 
 #[test]
-fn evaluate_property_access_in_function_call() {
+fn evaluate_propertyaccessinfunction_all() {
     assert_eq!(
         eval_formula("len({items: [1, 2, 3]}.items)"),
         Ok(Value::Number(3.0))
@@ -636,7 +636,7 @@ fn evaluate_property_access_in_function_call() {
 }
 
 #[test]
-fn evaluate_index_access_on_context_array_returns_element() {
+fn evaluate_indexaccessoncontextarrayreturns_lement() {
     let mut ctx = Context::new();
     ctx.set(
         "arr",
@@ -646,7 +646,7 @@ fn evaluate_index_access_on_context_array_returns_element() {
 }
 
 #[test]
-fn evaluate_chained_index_access_on_nested_arrays() {
+fn evaluate_chainedindexaccessonnested_rrays() {
     assert_eq!(
         eval_formula("[[1, 2], [3, 4]][1][0]"),
         Ok(Value::Number(3.0))
@@ -654,19 +654,19 @@ fn evaluate_chained_index_access_on_nested_arrays() {
 }
 
 #[test]
-fn evaluate_property_access_last_element_out_of_chain_returns_error() {
+fn evaluate_propertyaccesslastelementoutofchainreturns_rror() {
     // {a: {b: 1}}.a.c — "c" doesn't exist
     let result = eval_formula("{a: {b: 1}}.a.c");
     assert!(result.is_err());
     let err = result.unwrap_err();
     assert_eq!(err.kind, ErrorKind::PropertyNotFound);
-    assert_eq!(err.code, "E207");
+    assert_eq!(err.code, "E307");
 }
 
 // -- Phase 9: Lambda & Higher-Order Functions Tests --
 
 #[test]
-fn evaluate_single_identifier_lambda() {
+fn evaluate_singleidentifier_ambda() {
     let result = eval_formula("map([1, 2, 3], x => x + 1)").unwrap();
     assert_eq!(
         result,
@@ -679,7 +679,7 @@ fn evaluate_single_identifier_lambda() {
 }
 
 #[test]
-fn evaluate_parenthesized_lambda() {
+fn evaluate_parenthesized_ambda() {
     let result = eval_formula("map([1, 2, 3], (x) => x * 2)").unwrap();
     assert_eq!(
         result,
@@ -692,7 +692,7 @@ fn evaluate_parenthesized_lambda() {
 }
 
 #[test]
-fn evaluate_lambda_duplicate_params_fails() {
+fn evaluate_lambdaduplicateparams_ails() {
     let result = eval_formula("(x, x) => x");
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -701,7 +701,7 @@ fn evaluate_lambda_duplicate_params_fails() {
 }
 
 #[test]
-fn evaluate_lambda_display_and_debug() {
+fn evaluate_lambdadisplayand_ebug() {
     // Generate a Lambda value
     let tokens = tokenize("x => x + 1").unwrap();
     let ast = parse(&tokens).unwrap();
@@ -712,7 +712,7 @@ fn evaluate_lambda_display_and_debug() {
 }
 
 #[test]
-fn evaluate_string_and_bool_comparison() {
+fn evaluate_stringandbool_omparison() {
     assert_eq!(
         eval_formula("\"apple\" < \"banana\""),
         Ok(Value::Bool(true))
@@ -730,7 +730,7 @@ fn evaluate_string_and_bool_comparison() {
 }
 
 #[test]
-fn evaluate_comparison_type_mismatch_error() {
+fn evaluate_comparisontypemismatch_rror() {
     let result = eval_formula("1 < \"apple\"");
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -739,7 +739,7 @@ fn evaluate_comparison_type_mismatch_error() {
 }
 
 #[test]
-fn evaluate_recursion_limit_exceeded() {
+fn evaluate_recursionlimit_xceeded() {
     // A self-calling lambda to exceed 100 limit
     // Define a recursive lambda: f => f(f)
     // We bind a lambda under a variable name and call it
@@ -760,7 +760,7 @@ fn evaluate_recursion_limit_exceeded() {
 }
 
 #[test]
-fn evaluate_filter_function() {
+fn evaluate_filter_unction() {
     let result = eval_formula("filter([1, 2, 3, 4], x => x > 2)").unwrap();
     assert_eq!(
         result,
@@ -769,13 +769,13 @@ fn evaluate_filter_function() {
 }
 
 #[test]
-fn evaluate_reduce_function() {
+fn evaluate_reduce_unction() {
     let result = eval_formula("reduce([1, 2, 3], (acc, x) => acc + x, 10)").unwrap();
     assert_eq!(result, Value::Number(16.0));
 }
 
 #[test]
-fn evaluate_sort_with_function() {
+fn evaluate_sortwith_unction() {
     let result = eval_formula("sort_with([3, 1, 2], (a, b) => b - a)").unwrap();
     assert_eq!(
         result,
@@ -788,7 +788,7 @@ fn evaluate_sort_with_function() {
 }
 
 #[test]
-fn evaluate_sort_with_error_propagation() {
+fn evaluate_sortwitherror_ropagation() {
     // When the comparator lambda raises an error, it should be propagated
     let result = eval_formula("sort_with([1, 2], (a, b) => a + \"error\")");
     assert!(result.is_err());
@@ -797,7 +797,7 @@ fn evaluate_sort_with_error_propagation() {
 }
 
 #[test]
-fn evaluate_unique_function_various_types() {
+fn evaluate_uniquefunctionvarious_ypes() {
     let result = eval_formula("unique([1, 2, 2, 1, 3])").unwrap();
     assert_eq!(
         result,
@@ -810,7 +810,7 @@ fn evaluate_unique_function_various_types() {
 }
 
 #[test]
-fn evaluate_group_by_function() {
+fn evaluate_groupby_unction() {
     let result = eval_formula("group_by([1, 2, 3, 4], x => if(x > 2, \"high\", \"low\"))").unwrap();
     match result {
         Value::Map(map) => {
@@ -824,12 +824,12 @@ fn evaluate_group_by_function() {
                 &Value::Array(vec![Value::Number(3.0), Value::Number(4.0)])
             );
         }
-        _ => panic!("Expected Map"),
+        _ => panic!("คาดหวัง Map"),
     }
 }
 
 #[test]
-fn evaluate_sort_with_key_lambda() {
+fn evaluate_sortwithkey_ambda() {
     // sort based on age field in maps
     let result =
         eval_formula("sort([{age: 30, name: \"A\"}, {age: 20, name: \"B\"}], x => x.age)").unwrap();
@@ -841,15 +841,15 @@ fn evaluate_sort_with_key_lambda() {
                 Value::Map(map) => {
                     assert_eq!(map.get("name").unwrap(), &Value::String("B".to_string()));
                 }
-                _ => panic!("Expected Map"),
+                _ => panic!("คาดหวัง Map"),
             }
         }
-        _ => panic!("Expected Array"),
+        _ => panic!("คาดหวัง Array"),
     }
 }
 
 #[test]
-fn evaluate_unique_with_key_lambda() {
+fn evaluate_uniquewithkey_ambda() {
     // unique based on id field in maps
     let result = eval_formula(
         "unique([{id: 1, name: \"A\"}, {id: 2, name: \"B\"}, {id: 1, name: \"C\"}], x => x.id)",
@@ -863,16 +863,16 @@ fn evaluate_unique_with_key_lambda() {
                 Value::Map(map) => {
                     assert_eq!(map.get("name").unwrap(), &Value::String("A".to_string()));
                 }
-                _ => panic!("Expected Map"),
+                _ => panic!("คาดหวัง Map"),
             }
             match &arr[1] {
                 Value::Map(map) => {
                     assert_eq!(map.get("name").unwrap(), &Value::String("B".to_string()));
                 }
-                _ => panic!("Expected Map"),
+                _ => panic!("คาดหวัง Map"),
             }
         }
-        _ => panic!("Expected Array"),
+        _ => panic!("คาดหวัง Array"),
     }
 }
 
@@ -886,7 +886,7 @@ fn eval_formula_mut(formula: &str) -> Result<Value, FormulaError> {
 }
 
 #[test]
-fn evaluate_user_defined_function_basic() {
+fn evaluate_userdefinedfunction_asic() {
     assert_eq!(
         eval_formula_mut("fn double(x) = x * 2; double(5)"),
         Ok(Value::Number(10.0))
@@ -894,7 +894,7 @@ fn evaluate_user_defined_function_basic() {
 }
 
 #[test]
-fn evaluate_user_defined_function_two_params() {
+fn evaluate_userdefinedfunctiontwo_arams() {
     assert_eq!(
         eval_formula_mut("fn add(a, b) = a + b; add(3, 4)"),
         Ok(Value::Number(7.0))
@@ -902,7 +902,7 @@ fn evaluate_user_defined_function_two_params() {
 }
 
 #[test]
-fn evaluate_user_defined_function_zero_params() {
+fn evaluate_userdefinedfunctionzero_arams() {
     assert_eq!(
         eval_formula_mut("fn pi_val() = 3.14159; pi_val()"),
         Ok(Value::Number(3.14159))
@@ -910,7 +910,7 @@ fn evaluate_user_defined_function_zero_params() {
 }
 
 #[test]
-fn evaluate_user_defined_function_with_builtin() {
+fn evaluate_userdefinedfunctionwith_uiltin() {
     assert_eq!(
         eval_formula_mut("fn double_len(s) = len(s) * 2; double_len(\"hello\")"),
         Ok(Value::Number(10.0))
@@ -918,7 +918,7 @@ fn evaluate_user_defined_function_with_builtin() {
 }
 
 #[test]
-fn evaluate_user_defined_function_factorial() {
+fn evaluate_userdefinedfunction_actorial() {
     assert_eq!(
         eval_formula_mut("fn factorial(n) = if(n <= 1, 1, n * factorial(n - 1)); factorial(5)"),
         Ok(Value::Number(120.0))
@@ -926,7 +926,7 @@ fn evaluate_user_defined_function_factorial() {
 }
 
 #[test]
-fn evaluate_user_defined_function_factorial_base_case() {
+fn evaluate_userdefinedfunctionfactorialbase_ase() {
     assert_eq!(
         eval_formula_mut("fn factorial(n) = if(n <= 1, 1, n * factorial(n - 1)); factorial(1)"),
         Ok(Value::Number(1.0))
@@ -934,7 +934,7 @@ fn evaluate_user_defined_function_factorial_base_case() {
 }
 
 #[test]
-fn evaluate_user_defined_function_multiple_definitions() {
+fn evaluate_userdefinedfunctionmultiple_efinitions() {
     assert_eq!(
         eval_formula_mut("fn double(x) = x * 2; fn add_one(x) = x + 1; add_one(double(3))"),
         Ok(Value::Number(7.0))
@@ -942,7 +942,7 @@ fn evaluate_user_defined_function_multiple_definitions() {
 }
 
 #[test]
-fn evaluate_user_defined_function_wrong_arg_count() {
+fn evaluate_userdefinedfunctionwrongarg_ount() {
     let result = eval_formula_mut("fn double(x) = x * 2; double(1, 2)");
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -951,7 +951,7 @@ fn evaluate_user_defined_function_wrong_arg_count() {
 }
 
 #[test]
-fn evaluate_user_defined_function_duplicate_params() {
+fn evaluate_userdefinedfunctionduplicate_arams() {
     let result = eval_formula_mut("fn bad(x, x) = x");
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -960,7 +960,7 @@ fn evaluate_user_defined_function_duplicate_params() {
 }
 
 #[test]
-fn evaluate_user_defined_function_recursion_limit() {
+fn evaluate_userdefinedfunctionrecursion_imit() {
     let result = eval_formula_mut("fn f(n) = f(n + 1); f(0)");
     assert!(result.is_err());
     let err = result.unwrap_err();
@@ -969,7 +969,7 @@ fn evaluate_user_defined_function_recursion_limit() {
 }
 
 #[test]
-fn evaluate_user_defined_function_with_property_access() {
+fn evaluate_userdefinedfunctionwithproperty_ccess() {
     assert_eq!(
         eval_formula_mut("fn get_name(obj) = obj.name; get_name({name: \"Alice\"})"),
         Ok(Value::String("Alice".to_string()))
@@ -977,7 +977,7 @@ fn evaluate_user_defined_function_with_property_access() {
 }
 
 #[test]
-fn evaluate_sequence_returns_last_value() {
+fn evaluate_sequencereturnslast_alue() {
     assert_eq!(
         eval_formula_mut("1 + 1; 2 + 2; 3 + 3"),
         Ok(Value::Number(6.0))
@@ -985,7 +985,6 @@ fn evaluate_sequence_returns_last_value() {
 }
 
 #[test]
-fn evaluate_trailing_semicolon() {
+fn evaluate_trailing_emicolon() {
     assert_eq!(eval_formula_mut("42;"), Ok(Value::Number(42.0)));
 }
-

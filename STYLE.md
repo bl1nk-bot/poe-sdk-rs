@@ -62,7 +62,15 @@
         // ...
     }
     ```
-- **Error Messages ในภาษาไทย**: สำหรับข้อความแสดงข้อผิดพลาด (เช่น ใน [error.rs](file:///D:/dev/10/poe-sdk-rs-fix-pr10/src/error.rs)) จะต้องเขียนเป็นภาษาไทย และใช้รหัสข้อผิดพลาดตามกลุ่มโค้ด เช่น `E1xx` (Lex), `E2xx` (Parse), `E3xx` (Eval), `E4xx` (Type), `E5xx` (Function), `E6xx` (Context)
+- **Error Messages ในภาษาไทย**: สำหรับข้อความแสดงข้อผิดพลาด (เช่น ใน [error.rs](src/error.rs)) จะต้องเขียนเป็นภาษาไทย และใช้รหัสข้อผิดพลาดตาม "อนุกรมวิธานข้อผิดพลาด" (Error Taxonomy) ดังนี้:
+  - `E1xx`: **Lexer** (การตัดคำ)
+  - `E2xx`: **Parser** (การวิเคราะห์ไวยากรณ์)
+  - `E3xx`: **Evaluator** (การประมวลผลลัพธ์)
+  - `E4xx`: **Type System** (ระบบชนิดข้อมูล)
+  - `E5xx`: **Function** (การเรียกใช้ฟังก์ชัน/Lambda)
+  - `E6xx`: **Context** (บริบทตัวแปร)
+  - `E7xx`: **Serialization** (การแปลงข้อมูลเป็นข้อความ/JSON)
+  - `E8xx`: **Plugin** (ระบบปลั๊กอิน)
 - **ลบโค้ดที่คอมเมนต์ไว้ออก**: ห้ามทิ้งโค้ดที่ไม่ได้ใช้งานหรือถูกคอมเมนต์ทิ้งไว้ ให้ลบออกทันทีและอาศัย Git (Version Control) ในการย้อนดูประวัติแทน
 
 ---
@@ -78,9 +86,10 @@
 ```
 
 ### ประเภทของ Type ที่ใช้งานบ่อย:
-- `feat`: เพิ่มฟีเจอร์ใหม่ให้กับโปรเจกต์ (เช่น `feat(parser): add access chaining for object properties`)
-- `fix`: แก้ไขข้อผิดพลาดหรือบั๊ก (เช่น `fix(eval): prevent division by zero in evaluator`)
-- `docs`: ปรับปรุงหรือเพิ่มเอกสารต่าง ๆ (เช่น `docs(readme): update build instructions`)
+- `feat`: เพิ่มฟีเจอร์ใหม่ให้กับโปรเจกต์ (เช่น `feat(Phase 8): add property access`)
+- `fix`: แก้ไขข้อผิดพลาดหรือบั๊ก (เช่น `fix(Phase 1): prevent division by zero`)
+- `ci`: แก้ไขระบบ CI/CD หรือสคริปต์อัตโนมัติ (เช่น `ci(Phase 10): update workflow pipeline`)
+- `docs`: ปรับปรุงหรือเพิ่มเอกสารต่าง ๆ (เช่น `docs(Phase 2): update readme`)
 - `style`: ปรับแต่งรูปแบบโค้ดที่ไม่มีผลต่อการทำงานของโปรเจกต์ เช่น การทำ formatting ด้วย `cargo fmt`
 - `refactor`: ปรับปรุงโครงสร้างของโค้ดใหม่โดยไม่มีการเพิ่มฟีเจอร์หรือแก้บั๊ก
 - `test`: เพิ่ม ย้าย หรือแก้ไขไฟล์ทดสอบ (เช่น `test(lexer): add unit tests for escape characters`)

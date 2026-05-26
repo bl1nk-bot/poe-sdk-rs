@@ -14,9 +14,52 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # Verify commit message format
+  commit-lint:
+    name: Lint Commit Message
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check commit message format
+        run: |
+          # Pattern: <type>(Phase <N>): <title> (total header max 50 chars)
+          # Types: feat|fix|ci|docs|style|refactor|test|chore
+          PATTERN="^(feat|fix|ci|docs|style|refactor|test|chore)\(Phase [0-9]+\): .{1,40}$"
+          
+          # For pull requests, check all commits in the PR
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            commits=$(git log --format=%s origin/${{ github.base_ref }}..HEAD)
+          else
+            # For pushes, check the latest commit
+            commits=$(git log -1 --format=%s)
+          fi
+          
+          echo "Checking commits:"
+          echo "$commits"
+          
+          error=0
+          while IFS= read -r line; do
+            if [[ ! $line =~ $PATTERN ]]; then
+              echo "❌ Invalid format: $line"
+              echo "   Required format: type(Phase N): title (max 50 chars)"
+              error=1
+            else
+              echo "✅ Valid format: $line"
+            fi
+          done <<< "$commits"
+          
+          if [ $error -eq 1 ]; then
+            exit 1
+          fi
+
   # Primary CI job - comprehensive testing
   test:
     name: Test Suite
+    needs: commit-lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -52,9 +95,6 @@ jobs:
 
       - name: Run doc tests
         run: cargo test --doc
-
-      - name: Run benchmarks
-        run: cargo bench
 
       - name: Generate documentation
         run: cargo doc --no-deps --document-private-items

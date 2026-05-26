@@ -8,7 +8,7 @@
 - Added `Expr::IndexAccess { object, index }` to AST
 - Replaced string-concatenation dot hack in parser with `parse_postfix()` method
 - Replaced `name.split('.')` hack in evaluator with proper `PropertyAccess`/`IndexAccess` handlers
-- Error codes: `E207` (PropertyNotFound), `E208` (IndexOutOfBounds)
+- Error codes: `E307` (PropertyNotFound), `E308` (IndexOutOfBounds)
 - 16 new integration tests covering property access, index access, chained access, error cases
 
 ### New syntax
