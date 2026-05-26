@@ -1,5 +1,8 @@
 # bl1z Agent Instructions
 
+[![CI](https://github.com/bl1nk-bot/bl1z/actions/workflows/ci.yml/badge.svg)](https://github.com/bl1nk-bot/bl1z/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/bl1nk-bot/bl1z/actions/workflows/codeql.yml/badge.svg)](https://github.com/bl1nk-bot/bl1z/actions/workflows/codeql.yml)
+
 @SPEC.md
 @PLAN.md
 @STYLE.md
