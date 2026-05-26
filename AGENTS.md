@@ -24,6 +24,8 @@
 - **Thai Body Content:** Use Thai for standard chat, logic explanations, and project-specific communications.
 
 ## Operational Mandates
+- **Pre-Commit Checks:** Execution of project-specific formatters (e.g., `cargo fmt`) and linters (e.g., `cargo clippy`) is a mandatory prerequisite for every commit.
+- **Commit Standards:** Strictly enforce Conventional Commits. Header length must not exceed 50 characters.
 - **Issues-First:** Every task MUST have a GitHub Issue. The "Originating Prompt" from the human must be preserved in the Issue description or comments.
 - **Verification:** Every change MUST be verified with logs or test results. Failure to verify means the task is incomplete.
 - **Zero Warnings:** Clippy and tests must pass with zero warnings (-D warnings).
