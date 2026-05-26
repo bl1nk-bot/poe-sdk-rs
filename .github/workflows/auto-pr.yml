@@ -23,7 +23,6 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-          persist-credentials: false
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -112,7 +111,7 @@ jobs:
             --head "$REPO_OWNER:$REF_NAME" \
             --base main \
             --title "$PR_TITLE" \
-            --body -e "$PR_BODY" \
+            --body "$PR_BODY" \
             --label "$LABELS"
 
       - name: Send Webhook Notification

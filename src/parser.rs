@@ -220,17 +220,18 @@ impl<'a> Parser<'a> {
         )
     }
 
-    /// unary = ('-' | '!')? primary
+    /// unary = ('-' | '+' | '!')? primary
     fn parse_unary(&mut self) -> Result<SpannedExpr, FormulaError> {
-        if self.peek() == TokenKind::Minus || self.peek() == TokenKind::Bang {
+        if self.peek() == TokenKind::Minus || self.peek() == TokenKind::Plus || self.peek() == TokenKind::Bang {
             let op = match self.peek() {
                 TokenKind::Minus => UnaryOp::Neg,
+                TokenKind::Plus => UnaryOp::Pos,
                 TokenKind::Bang => UnaryOp::Not,
                 _ => unreachable!(),
             };
             let op_span = token_span(self.tokens, self.pos);
             self.advance();
-            let expr = self.parse_primary()?;
+            let expr = self.parse_unary()?;
             let span = Span {
                 start: op_span.start,
                 end: expr.meta.span.end,

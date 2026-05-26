@@ -44,7 +44,7 @@ fn evaluate_impl(
         Expr::Literal(val) => Ok(val.clone()),
         Expr::Variable(name) => ctx.get(name).cloned().ok_or_else(|| {
             FormulaError::new(
-                ErrorKind::ContextError,
+                ErrorKind::VariableNotFound,
                 "E601",
                 &format!("ไม่พบตัวแปร '{}'", name),
                 Some(span),
@@ -56,7 +56,7 @@ fn evaluate_impl(
                 Value::Map(map) => map.get(property).cloned().ok_or_else(|| {
                     FormulaError::new(
                         ErrorKind::PropertyNotFound,
-                        "E207",
+                        "E307",
                         &format!("ไม่พบ property '{}'", property),
                         Some(span),
                     )
@@ -86,7 +86,7 @@ fn evaluate_impl(
                     if n < 0.0 || i >= arr.len() {
                         Err(FormulaError::new(
                             ErrorKind::IndexOutOfBounds,
-                            "E208",
+                            "E308",
                             &format!("index {} นอกขอบเขต (ขนาด {})", n, arr.len()),
                             Some(span),
                         ))
@@ -120,6 +120,18 @@ fn evaluate_impl(
                             ErrorKind::TypeError,
                             "E401",
                             "ตัวดำเนินการลบใช้ได้กับตัวเลขเท่านั้น",
+                            Some(span),
+                        ))
+                    }
+                }
+                UnaryOp::Pos => {
+                    if let Value::Number(_) = val {
+                        Ok(val)
+                    } else {
+                        Err(FormulaError::new(
+                            ErrorKind::TypeError,
+                            "E401",
+                            "ตัวดำเนินการบวกใช้ได้กับตัวเลขเท่านั้น",
                             Some(span),
                         ))
                     }
@@ -182,6 +194,7 @@ fn evaluate_impl(
                 Rc::new((**body).clone()),
                 params.clone(),
                 captured,
+                ctx.get_functions(),
             ))
         }
         Expr::FunctionDef { name, params, body } => {
@@ -266,7 +279,7 @@ fn evaluate_impl(
             }
 
             // Check if function name exists as a variable (might be a lambda)
-            if let Some(Value::Lambda(_, _, _)) = ctx.get(name.as_str()) {
+            if let Some(Value::Lambda(_, _, _, _)) = ctx.get(name.as_str()) {
                 let func_val = ctx.get(name.as_str()).unwrap().clone();
                 let evaluated_args: Vec<Value> = args
                     .iter()
@@ -324,7 +337,7 @@ fn apply_lambda_impl(
     depth: usize,
 ) -> Result<Value, FormulaError> {
     match lambda {
-        Value::Lambda(body_expr, params, captured_scope) => {
+        Value::Lambda(body_expr, params, captured_vars, captured_funcs) => {
             if params.len() != args.len() {
                 return Err(FormulaError::new(
                     ErrorKind::FunctionError,
@@ -340,8 +353,11 @@ fn apply_lambda_impl(
 
             // Build context from captured scope
             let mut lambda_ctx = Context::new();
-            for (k, v) in captured_scope.iter() {
+            for (k, v) in captured_vars.iter() {
                 lambda_ctx.set(k, v.clone());
+            }
+            for func in captured_funcs.values() {
+                lambda_ctx.set_function(func.clone());
             }
 
             // Bind parameters
