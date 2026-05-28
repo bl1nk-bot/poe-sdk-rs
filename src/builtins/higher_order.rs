@@ -225,6 +225,10 @@ pub fn compare_values(a: &Value, b: &Value) -> std::cmp::Ordering {
                 Map(_) => 5,
                 Lambda(_, _, _, _) => 6,
                 Null => 7,
+                DateTime(_) => 8,
+                Duration(_) => 9,
+                Set(_) => 10,
+                Range { .. } => 11,
             };
             type_val(x).cmp(&type_val(y))
         }
@@ -657,5 +661,115 @@ mod tests {
     fn test_unique_non_array_returns_error() {
         let result = call_fn(unique_fn(), vec![Value::String("test".to_string())]);
         assert!(result.is_err());
+    }
+
+    // Phase 11.6-11.7: set/range tests
+
+    #[test]
+    fn test_set_basic() {
+        let result = call_fn(
+            set_fn(),
+            vec![Value::Array(vec![
+                Value::Number(1.0),
+                Value::Number(2.0),
+                Value::Number(1.0),
+            ])],
+        )
+        .unwrap();
+        match result {
+            Value::Set(s) => assert_eq!(s.len(), 2),
+            _ => panic!("expected Set"),
+        }
+    }
+
+    #[test]
+    fn test_range_basic() {
+        let result = call_fn(range_fn(), vec![Value::Number(1.0), Value::Number(5.0)]).unwrap();
+        match result {
+            Value::Range { start, end, step } => {
+                assert_eq!(start, 1);
+                assert_eq!(end, 5);
+                assert_eq!(step, 1);
+            }
+            _ => panic!("expected Range"),
+        }
+    }
+
+    #[test]
+    fn test_range_with_step() {
+        let result = call_fn(
+            range_fn(),
+            vec![Value::Number(0.0), Value::Number(10.0), Value::Number(2.0)],
+        )
+        .unwrap();
+        match result {
+            Value::Range { start, end, step } => {
+                assert_eq!(start, 0);
+                assert_eq!(end, 10);
+                assert_eq!(step, 2);
+            }
+            _ => panic!("expected Range"),
+        }
+    }
+}
+
+/// Phase 11.6: set(array) -> Set
+/// Convert array to unique set
+pub fn set_fn() -> BuiltinFunction {
+    BuiltinFunction {
+        name: "set".to_string(),
+        arity: 1,
+        call: |args| {
+            let arr = require_array(&args[0])?;
+            let set: std::collections::HashSet<Value> = arr.iter().cloned().collect();
+            Ok(Value::Set(set))
+        },
+    }
+}
+
+/// Phase 11.7: range(start, end, step?) -> Range
+/// Create a range iterator
+pub fn range_fn() -> BuiltinFunction {
+    BuiltinFunction {
+        name: "range".to_string(),
+        arity: 999, // 2 or 3 args
+        call: |args| {
+            if args.len() < 2 {
+                return Err(FormulaError::new(
+                    ErrorKind::FunctionError,
+                    "E503",
+                    "ฟังก์ชัน 'range' ต้องการ 2-3 อาร์กิวเมนต์",
+                    None,
+                ));
+            }
+            let start = require_num(&args[0])? as i64;
+            let end = require_num(&args[1])? as i64;
+            let step = if args.len() > 2 {
+                require_num(&args[2])? as i64
+            } else {
+                1
+            };
+            if step == 0 {
+                return Err(FormulaError::new(
+                    ErrorKind::FunctionError,
+                    "E503",
+                    "step ของ range ต้องไม่เท่ากับ 0",
+                    None,
+                ));
+            }
+            Ok(Value::Range { start, end, step })
+        },
+    }
+}
+
+fn require_num(value: &Value) -> Result<f64, FormulaError> {
+    match value {
+        Value::Number(n) => Ok(*n),
+        _ => Err(FormulaError::new(
+            ErrorKind::TypeError,
+            "E401",
+            "พารามิเตอร์ต้องเป็นตัวเลข",
+            None,
+        )),
     }
 }

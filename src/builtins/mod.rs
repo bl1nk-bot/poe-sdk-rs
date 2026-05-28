@@ -51,4 +51,8 @@ pub fn register_all(registry: &mut FunctionRegistry) {
     registry.register(higher_order::sort_with_fn());
     registry.register(higher_order::unique_fn());
     registry.register(higher_order::group_by_fn());
+
+    // Phase 11.6-11.7: set() and range()
+    registry.register(higher_order::set_fn());
+    registry.register(higher_order::range_fn());
 }
