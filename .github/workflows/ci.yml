@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
@@ -67,7 +67,8 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -82,13 +83,71 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
-  # 3. Security audit
+      - name: Run doc tests
+        run: cargo test --doc
+
+      - name: Generate documentation
+        run: cargo doc --no-deps --document-private-items
+
+  # Test examples separately for better visibility
+  examples:
+    name: Test Examples
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Ensure latest Rust
+        run: rustup update stable
+
+      - name: Test basic example
+        run: cargo run --example basic
+
+      - name: Test advanced example
+        run: cargo run --example advanced
+
+  # Test snapshot updates (only on main branch)
+  snapshots:
+    name: Update Snapshots
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Ensure latest Rust
+        run: rustup update stable
+
+      - name: Test and update snapshots
+        run: cargo test --test error_snapshots
+        env:
+          INSTA_UPDATE: 1
+
+  # Security audit
   audit:
     name: Security Audit
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
       - name: Run audit
         uses: actions-rust-lang/audit@v1
 
@@ -147,7 +206,7 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
       - name: Get Version
