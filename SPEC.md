@@ -1,6 +1,6 @@
-# Architecture Rust สำหรับ Formula Engine
+# Architecture Rust สำหรับ bl1z
 
-โครงแบบสำหรับสร้าง **formula/calculation library** ด้วย Rust ให้เติบโตแบบค่อยเป็นค่อยไป เหมาะกับแนว Notion-like formula engine และ POE SDK
+โครงแบบสำหรับสร้าง **formula/calculation library** ด้วย Rust ให้เติบโตแบบค่อยเป็นค่อยไป เหมาะกับแนว Notion-like bl1z และ POE SDK
 
 สถานะปัจจุบัน: **V2 พร้อมเริ่มดำเนินการ**
 

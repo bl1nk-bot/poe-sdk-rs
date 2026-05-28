@@ -1,4 +1,4 @@
-//! # Formula Engine
+//! # bl1z
 //!
 //! A high-performance, extensible formula evaluation engine written in Rust.
 //! Supports mathematical expressions, string operations, arrays, maps, and date/time functions

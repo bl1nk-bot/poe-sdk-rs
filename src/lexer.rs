@@ -32,6 +32,7 @@ pub enum TokenKind {
     RBrace,     // }
     Colon,      // :
     Arrow,      // => (for lambda expressions, Phase 9)
+    At,         // @ (Phase 11: DateTime literal)
     Fn,         // fn (Phase 10: user-defined functions)
     Eq,         // = (Phase 10: function definition assignment)
     Semicolon,  // ; (Phase 10: expression separator)
@@ -369,6 +370,13 @@ impl<'a> Lexer<'a> {
                     let sc = self.col;
                     self.advance();
                     self.push_token(TokenKind::Colon, ":".to_string(), sl, sc);
+                }
+                '@' => {
+                    // Phase 11: DateTime literal (@2024-01-01)
+                    let sl = self.line;
+                    let sc = self.col;
+                    self.advance();
+                    self.push_token(TokenKind::At, "@".to_string(), sl, sc);
                 }
                 c if c.is_alphabetic() || c == '_' => {
                     self.scan_identifier(c);

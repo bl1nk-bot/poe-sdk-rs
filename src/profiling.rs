@@ -1,4 +1,4 @@
-//! Performance profiling utilities for Formula Engine.
+//! Performance profiling utilities for bl1z.
 //!
 //! This module provides tools for analyzing and optimizing formula evaluation performance.
 

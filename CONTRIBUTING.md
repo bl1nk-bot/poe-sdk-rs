@@ -1,6 +1,6 @@
-# Contributing to Formula Engine
+# Contributing to bl1z
 
-Thank you for your interest in contributing to the Formula Engine! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to the bl1z! This document provides guidelines and information for contributors.
 
 ## Table of Contents
 
@@ -329,4 +329,4 @@ Contributors will be:
 - Acknowledged in release notes
 - Added to contributors list (if desired)
 
-Thank you for contributing to Formula Engine! 🎉
+Thank you for contributing to bl1z! 🎉

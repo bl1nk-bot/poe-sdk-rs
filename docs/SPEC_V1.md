@@ -1,6 +1,6 @@
-# Architecture Rust สำหรับ Formula Engine (อัปเดต ณ commit 6d2529a)
+# Architecture Rust สำหรับ bl1z (อัปเดต ณ commit 6d2529a)
 
-โครงแบบสำหรับสร้าง **formula/calculation library** ด้วย Rust ให้โตแบบค่อยเป็นค่อยไป เหมาะกับแนว Notion-like formula engine  
+โครงแบบสำหรับสร้าง **formula/calculation library** ด้วย Rust ให้โตแบบค่อยเป็นค่อยไป เหมาะกับแนว Notion-like bl1z  
 สถานะโดยรวม: **V1 เสร็จสมบูรณ์** (number, string, bool, null + ตัวดำเนินการ + ฟังก์ชัน + context + error reporting)  
 เฟส 6 (Advanced Features) ยังไม่เริ่ม เฟส 7 (Quality & Tooling) มีบางส่วนแล้ว
 

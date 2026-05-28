@@ -1,6 +1,6 @@
 ---
 name: รายงานข้อผิดพลาด (Bug Report)
-about: รายงานปัญหาการทำงานหรือข้อผิดพลาดในระบบสูตรคำนวณ (Formula Engine)
+about: รายงานปัญหาการทำงานหรือข้อผิดพลาดในระบบสูตรคำนวณ (bl1z)
 title: '[BUG]: '
 labels: bug
 assignees: ''
