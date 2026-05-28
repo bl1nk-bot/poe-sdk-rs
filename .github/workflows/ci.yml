@@ -3,9 +3,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
-    # Also trigger on feature branches for early validation
-    branches-ignore: []
+    # Run on all branch pushes; job-level `if` clauses decide behavior
   pull_request:
     branches: [ main, develop ]
 
