@@ -335,6 +335,46 @@ impl<'a> Parser<'a> {
                 Expr::Literal(crate::value::Value::Null),
                 span,
             )),
+            // Phase 11: DateTime literal with @ prefix
+            TokenKind::At => {
+                // Expect a string (date or datetime) after @
+                match self.peek() {
+                    TokenKind::String => {
+                        self.advance();
+                    }
+                    TokenKind::Identifier => {
+                        // Allow @2024-01-01 without quotes
+                        self.advance();
+                    }
+                    _ => {
+                        return Err(FormulaError::new(
+                            ErrorKind::ParseError,
+                            "E210",
+                            "DateTime literal requires a date string after @",
+                            Some(span),
+                        ));
+                    }
+                };
+                let date_str = self.tokens[self.pos - 1].lexeme.clone();
+                // Try ISO 8601 date/datetime format
+                let parsed = jiff::Timestamp::strptime("%F", &date_str)
+                    .or_else(|_| jiff::Timestamp::strptime("%+", &date_str))
+                    .map_err(|_| {
+                        FormulaError::new(
+                            ErrorKind::ParseError,
+                            "E210",
+                            &format!("Cannot parse DateTime from '{}'", date_str),
+                            Some(span),
+                        )
+                    })?;
+                Ok(SpannedExpr::new(
+                    Expr::Literal(crate::value::Value::DateTime(parsed)),
+                    Span {
+                        start: span.start,
+                        end: self.tokens[self.pos - 1].span.end,
+                    },
+                ))
+            }
             TokenKind::Identifier => {
                 let name = tok.lexeme.clone();
                 // Phase 9: Check for single-identifier lambda: x => x + 1

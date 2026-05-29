@@ -6,136 +6,181 @@ use std::rc::Rc;
 /// Phase 9: Lambda & Higher-Order Functions
 pub type CapturedScope = std::collections::BTreeMap<String, Value>;
 
-/// Represents a value in the formula engine.
-///
-/// Values are the result of evaluating expressions and can be used
-/// as function arguments or stored in contexts.
-///
-/// # Supported Types
-///
-/// - **Number**: 64-bit floating point numbers for mathematical operations
-/// - **String**: UTF-8 strings for text operations
-/// - **Bool**: Boolean values for logical operations
-/// - **Null**: Represents absence of value or uninitialized state
-/// - **Array**: Ordered collection of values, supports nesting
-/// - **Map**: Key-value dictionary with string keys
-///
-/// # Type Safety
-///
-/// All operations perform runtime type checking. Attempting to perform
-/// incompatible operations (e.g., adding string to number) will result
-/// in a `TypeError` with detailed error messages.
-///
-/// # Examples
-///
-/// ```
-/// use bl1z::Value;
-/// use std::collections::HashMap;
-///
-/// // Basic values
-/// let num = Value::Number(42.0);
-/// let str = Value::String("hello".to_string());
-/// let bool_val = Value::Bool(true);
-/// let null_val = Value::Null;
-///
-/// // Arrays
-/// let arr = Value::Array(vec![
-///     Value::Number(1.0),
-///     Value::Number(2.0),
-///     Value::String("three".to_string())
-/// ]);
-///
-/// // Maps
-/// let mut map = HashMap::new();
-/// map.insert("name".to_string(), Value::String("John".to_string()));
-/// map.insert("age".to_string(), Value::Number(30.0));
-/// let map_val = Value::Map(map);
-/// ```
-#[derive(Clone, PartialEq)]
+/// Wrapper for jiff::Span to enable hashing/equality.
+/// Phase 11: Advanced Data Types
+#[derive(Clone, Debug)]
+pub struct Duration(pub jiff::Span);
+
+impl PartialEq for Duration {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.to_string() == other.0.to_string()
+    }
+}
+
+impl Eq for Duration {}
+
+impl std::hash::Hash for Duration {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.to_string().hash(state);
+    }
+}
+
+impl std::fmt::Display for Duration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// Represents a value in the bl1z.
+#[derive(Clone)]
 pub enum Value {
-    /// 64-bit floating point number for mathematical calculations.
-    ///
-    /// Supports all standard arithmetic operations and comparisons.
-    /// Uses `f64` for maximum precision and compatibility.
     Number(f64),
-
-    /// UTF-8 string for text operations and concatenation.
-    ///
-    /// Supports string functions like `len()`, `upper()`, `contains()`, etc.
-    /// Can be concatenated with `+` operator.
     String(String),
-
-    /// Boolean value for logical operations.
-    ///
-    /// Used in conditional expressions and logical operators (`&&`, `||`, `!`).
     Bool(bool),
-
-    /// Represents null/absent value.
-    ///
-    /// Useful for optional values and uninitialized states.
-    /// Cannot participate in most operations (will cause TypeError).
     Null,
-
-    /// Ordered collection of values with O(1) indexing.
-    ///
-    /// Supports nesting (arrays of arrays) and heterogeneous types.
-    /// Used with collection functions like `sum()`, `avg()`, `count()`, `join()`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bl1z::Value;
-    /// let numbers = Value::Array(vec![
-    ///     Value::Number(1.0),
-    ///     Value::Number(2.0),
-    ///     Value::Number(3.0)
-    /// ]);
-    ///
-    /// let nested = Value::Array(vec![
-    ///     Value::Array(vec![Value::Number(1.0), Value::Number(2.0)]),
-    ///     Value::Array(vec![Value::Number(3.0), Value::Number(4.0)])
-    /// ]);
-    /// ```
     Array(Vec<Value>),
-
-    /// Key-value dictionary with string keys.
-    ///
-    /// Keys must be valid identifiers. Values can be any type including nested maps.
-    /// Currently used for object literals but can be extended for more complex data structures.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bl1z::Value;
-    /// use std::collections::HashMap;
-    ///
-    /// let mut person = HashMap::new();
-    /// person.insert("name".to_string(), Value::String("Alice".to_string()));
-    /// person.insert("age".to_string(), Value::Number(25.0));
-    /// person.insert("active".to_string(), Value::Bool(true));
-    ///
-    /// let person_val = Value::Map(person);
-    /// ```
     Map(std::collections::HashMap<String, Value>),
-
-    /// A closure: captures parameters, body, and the lexical scope.
-    ///
-    /// Phase 9: Lambda & Higher-Order Functions
-    /// Used for storing lambda expressions as first-class values.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bl1z::Value;
-    /// // Lambda values are created by the evaluator when parsing lambda syntax
-    /// // (x) => x + 1
-    /// ```
     Lambda(
         Rc<SpannedExpr>,
         Vec<String>,
         CapturedScope,
         std::collections::BTreeMap<String, crate::context::UserFunction>,
     ),
+    DateTime(jiff::Timestamp),
+    Duration(Duration),
+    Set(std::collections::HashSet<Value>),
+    Range {
+        start: i64,
+        end: i64,
+        step: i64,
+    },
+}
+
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Number(a), Value::Number(b)) => {
+                // Handle NaN and infinity correctly
+                if a.is_nan() && b.is_nan() {
+                    true
+                } else if a.is_infinite() && b.is_infinite() {
+                    a == b
+                } else {
+                    a.to_bits() == b.to_bits()
+                }
+            }
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Null, Value::Null) => true,
+            (Value::Array(a), Value::Array(b)) => a == b,
+            (Value::Map(a), Value::Map(b)) => {
+                // Map equality by string comparison of each key-value pair
+                if a.len() != b.len() {
+                    return false;
+                }
+                for (k, v) in a.iter() {
+                    match b.get(k) {
+                        Some(other_v) => {
+                            if v != other_v {
+                                return false;
+                            }
+                        }
+                        None => return false,
+                    }
+                }
+                true
+            }
+            (Value::Lambda(_, _, _, _), Value::Lambda(_, _, _, _)) => false, // Lambdas never equal
+            (Value::DateTime(a), Value::DateTime(b)) => a == b,
+            (Value::Duration(a), Value::Duration(b)) => a == b,
+            (Value::Set(a), Value::Set(b)) => a == b,
+            (
+                Value::Range {
+                    start: a_start,
+                    end: a_end,
+                    step: a_step,
+                },
+                Value::Range {
+                    start: b_start,
+                    end: b_end,
+                    step: b_step,
+                },
+            ) => a_start == b_start && a_end == b_end && a_step == b_step,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for Value {}
+
+impl std::hash::Hash for Value {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            Value::Number(n) => {
+                0u8.hash(state);
+                if n.is_nan() {
+                    u64::MAX.hash(state);
+                } else if n.is_infinite() {
+                    (*n as u64).hash(state);
+                } else {
+                    n.to_bits().hash(state);
+                }
+            }
+            Value::String(s) => {
+                1u8.hash(state);
+                s.hash(state);
+            }
+            Value::Bool(b) => {
+                2u8.hash(state);
+                b.hash(state);
+            }
+            Value::Null => {
+                3u8.hash(state);
+            }
+            Value::Array(arr) => {
+                4u8.hash(state);
+                for v in arr {
+                    v.hash(state);
+                }
+            }
+            Value::Map(map) => {
+                5u8.hash(state);
+                let mut keys: Vec<&String> = map.keys().collect();
+                keys.sort();
+                for k in keys {
+                    k.hash(state);
+                    map.get(k).unwrap().hash(state);
+                }
+            }
+            Value::Lambda(expr, params, _, _) => {
+                6u8.hash(state);
+                params.hash(state);
+                (expr.as_ref() as *const SpannedExpr).hash(state);
+            }
+            Value::DateTime(dt) => {
+                7u8.hash(state);
+                dt.to_string().hash(state);
+            }
+            Value::Duration(d) => {
+                8u8.hash(state);
+                d.0.to_string().hash(state);
+            }
+            Value::Set(set) => {
+                9u8.hash(state);
+                let mut sorted: Vec<&Value> = set.iter().collect();
+                sorted.sort_by_key(|v| format!("{:?}", v));
+                for v in sorted {
+                    v.hash(state);
+                }
+            }
+            Value::Range { start, end, step } => {
+                10u8.hash(state);
+                start.hash(state);
+                end.hash(state);
+                step.hash(state);
+            }
+        }
+    }
 }
 
 impl std::fmt::Display for Value {
@@ -170,6 +215,31 @@ impl std::fmt::Display for Value {
             Value::Lambda(_, params, _, _) => {
                 write!(f, "({}) => ...", params.join(", "))
             }
+            Value::DateTime(dt) => {
+                write!(f, "@{}", dt)
+            }
+            Value::Duration(d) => {
+                write!(f, "{}", d.0)
+            }
+            Value::Set(set) => {
+                let mut sorted: Vec<&Value> = set.iter().collect();
+                sorted.sort_by_key(|v| format!("{}", v));
+                write!(f, "{{")?;
+                for (i, v) in sorted.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", v)?;
+                }
+                write!(f, "}}")
+            }
+            Value::Range { start, end, step } => {
+                if *step == 1 {
+                    write!(f, "{}..{}", start, end)
+                } else {
+                    write!(f, "{}..{}:{}", start, end, step)
+                }
+            }
         }
     }
 }
@@ -194,7 +264,7 @@ impl std::fmt::Debug for Value {
             Value::Map(map) => {
                 let mut sorted_keys: Vec<&String> = map.keys().collect();
                 sorted_keys.sort();
-                write!(f, "Map({{")?;
+                write!(f, "Map({{",)?;
                 for (i, k) in sorted_keys.iter().enumerate() {
                     if i > 0 {
                         write!(f, ", ")?;
@@ -205,6 +275,23 @@ impl std::fmt::Debug for Value {
             }
             Value::Lambda(_, params, _, _) => {
                 write!(f, "Lambda(({}) => ...)", params.join(", "))
+            }
+            Value::DateTime(dt) => write!(f, "DateTime({})", dt),
+            Value::Duration(d) => write!(f, "Duration({})", d.0),
+            Value::Set(set) => {
+                let mut sorted: Vec<&Value> = set.iter().collect();
+                sorted.sort_by_key(|v| format!("{:?}", v));
+                write!(f, "Set({{",)?;
+                for (i, v) in sorted.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{:?}", v)?;
+                }
+                write!(f, "}})")
+            }
+            Value::Range { start, end, step } => {
+                write!(f, "Range({}..{}:{})", start, end, step)
             }
         }
     }

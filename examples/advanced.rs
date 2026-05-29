@@ -11,7 +11,7 @@ use bl1z::{
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Formula Engine - Advanced Example");
+    println!("bl1z - Advanced Example");
     println!("=================================\n");
 
     // Create registry with built-ins

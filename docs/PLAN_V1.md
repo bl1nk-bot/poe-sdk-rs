@@ -8,7 +8,7 @@
 **เป้าหมาย:** กำหนดสิ่งที่จะสร้างให้ชัดก่อนเริ่มเขียนจริง
 
 **งานที่ทำแล้ว:**
-- นิยาม use case หลัก: formula engine สำหรับ POE SDK
+- นิยาม use case หลัก: bl1z สำหรับ POE SDK
 - นิยาม syntax และ grammar (ดู PRD ภาษาไทย)
 - กำหนด value types V1: Number, String, Bool, Null
 - กำหนด operator set: + - * / ! - (unary) && || == != < > <= >=

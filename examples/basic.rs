@@ -1,4 +1,4 @@
-//! Basic usage example for Formula Engine
+//! Basic usage example for bl1z
 //!
 //! This example demonstrates the core functionality:
 //! - Tokenizing formulas
@@ -10,7 +10,7 @@ use bl1z::builtins;
 use bl1z::{evaluate, parse, tokenize, Context, FunctionRegistry, Value};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    println!("Formula Engine - Basic Example");
+    println!("bl1z - Basic Example");
     println!("==============================\n");
 
     // Create function registry with all built-ins
@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Example 2: String operations
     println!("\n2. String Operations:");
     evaluate_and_print("upper(\"hello world\")", &Context::new(), &registry)?;
-    evaluate_and_print("len(\"formula engine\")", &Context::new(), &registry)?;
+    evaluate_and_print("len(\"bl1z\")", &Context::new(), &registry)?;
 
     // Example 3: Using context variables
     println!("\n3. Context Variables:");
