@@ -740,4 +740,56 @@ mod integration_tests {
         let result_len = evaluate(&ast_len, &Context::new(), &reg).unwrap();
         assert_eq!(result_count, result_len);
     }
+
+    #[test]
+    fn test_map_lambda() {
+        let reg = prepared_registry();
+        let tokens = tokenize("map([1, 2, 3], (x) => x * 2)").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(
+            result,
+            Value::Array(vec![
+                Value::Number(2.0),
+                Value::Number(4.0),
+                Value::Number(6.0)
+            ])
+        );
+    }
+
+    #[test]
+    fn test_filter_lambda() {
+        let reg = prepared_registry();
+        let tokens = tokenize("filter([1, 2, 3, 4, 5], (x) => x > 3)").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(
+            result,
+            Value::Array(vec![Value::Number(4.0), Value::Number(5.0)])
+        );
+    }
+
+    #[test]
+    fn test_reduce_lambda() {
+        let reg = prepared_registry();
+        let tokens = tokenize("reduce([1, 2, 3, 4], 0, (acc, x) => acc + x)").unwrap();
+        let ast = parse(&tokens).unwrap();
+        let result = evaluate(&ast, &Context::new(), &reg).unwrap();
+        assert_eq!(result, Value::Number(10.0));
+    }
+
+    #[test]
+    fn test_user_defined_function() {
+        let reg = prepared_registry();
+        let mut ctx = Context::new();
+        // Manually add UDF to context for now
+        let tokens = tokenize("x * 2").unwrap();
+        let body = parse(&tokens).unwrap();
+        ctx.set_function("double", vec!["x".to_string()], body);
+
+        let tokens_call = tokenize("double(21)").unwrap();
+        let ast_call = parse(&tokens_call).unwrap();
+        let result = evaluate(&ast_call, &ctx, &reg).unwrap();
+        assert_eq!(result, Value::Number(42.0));
+    }
 }

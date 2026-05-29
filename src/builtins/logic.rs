@@ -1,21 +1,21 @@
-// src/builtins/logic.rs
 use crate::error::{ErrorKind, FormulaError};
 use crate::functions::BuiltinFunction;
 use crate::value::Value;
+use std::sync::Arc;
 
 pub fn if_fn() -> BuiltinFunction {
     BuiltinFunction {
         name: "if".to_string(),
         arity: 3,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let cond = &args[0];
             let is_true = match cond {
                 Value::Bool(b) => *b,
                 _ => {
                     return Err(FormulaError::new(
-                        ErrorKind::FunctionError,
-                        "E501",
-                        "if เงื่อนไขต้องเป็น boolean",
+                        ErrorKind::TypeError,
+                        "E401",
+                        "เงื่อนไขของ IF ต้องเป็น boolean",
                         None,
                     ))
                 }
@@ -25,6 +25,6 @@ pub fn if_fn() -> BuiltinFunction {
             } else {
                 Ok(args[2].clone())
             }
-        },
+        }),
     }
 }

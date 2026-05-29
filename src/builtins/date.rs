@@ -4,6 +4,7 @@ use crate::error::{ErrorKind, FormulaError};
 use crate::functions::BuiltinFunction;
 use crate::value::Value;
 use std::str::FromStr;
+use std::sync::Arc;
 
 /// now() -> String
 /// คืนวันที่และเวลาปัจจุบันในรูปแบบ ISO 8601
@@ -11,10 +12,10 @@ pub fn now() -> BuiltinFunction {
     BuiltinFunction {
         name: "now".to_string(),
         arity: 0,
-        call: |_| {
+        call: Arc::new(|_args: &[Value]| {
             let now = jiff::Timestamp::now();
             Ok(Value::String(now.to_string()))
-        },
+        }),
     }
 }
 
@@ -24,7 +25,7 @@ pub fn date_add() -> BuiltinFunction {
     BuiltinFunction {
         name: "date_add".to_string(),
         arity: 2,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let date_str = require_string(&args[0])?;
             let days = require_number(&args[1])?;
 
@@ -51,7 +52,7 @@ pub fn date_add() -> BuiltinFunction {
             })?;
 
             Ok(Value::String(new_date.to_string()))
-        },
+        }),
     }
 }
 
@@ -61,7 +62,7 @@ pub fn date() -> BuiltinFunction {
     BuiltinFunction {
         name: "date".to_string(),
         arity: 3,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let year = require_number(&args[0])? as i16;
             let month = require_number(&args[1])? as i8;
             let day = require_number(&args[2])? as i8;
@@ -70,7 +71,7 @@ pub fn date() -> BuiltinFunction {
                 FormulaError::new(ErrorKind::FunctionError, "E301", "Invalid date", None)
             })?;
             Ok(Value::String(d.to_string()))
-        },
+        }),
     }
 }
 
@@ -80,12 +81,12 @@ pub fn year() -> BuiltinFunction {
     BuiltinFunction {
         name: "year".to_string(),
         arity: 1,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let date_str = require_string(&args[0])?;
             let ts = parse_to_timestamp(&date_str)?;
             let zdt = ts.to_zoned(jiff::tz::TimeZone::UTC);
             Ok(Value::Number(zdt.year() as f64))
-        },
+        }),
     }
 }
 
@@ -95,12 +96,12 @@ pub fn month() -> BuiltinFunction {
     BuiltinFunction {
         name: "month".to_string(),
         arity: 1,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let date_str = require_string(&args[0])?;
             let ts = parse_to_timestamp(&date_str)?;
             let zdt = ts.to_zoned(jiff::tz::TimeZone::UTC);
             Ok(Value::Number(zdt.month() as f64))
-        },
+        }),
     }
 }
 
@@ -110,12 +111,12 @@ pub fn day() -> BuiltinFunction {
     BuiltinFunction {
         name: "day".to_string(),
         arity: 1,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let date_str = require_string(&args[0])?;
             let ts = parse_to_timestamp(&date_str)?;
             let zdt = ts.to_zoned(jiff::tz::TimeZone::UTC);
             Ok(Value::Number(zdt.day() as f64))
-        },
+        }),
     }
 }
 
@@ -125,7 +126,7 @@ pub fn date_diff() -> BuiltinFunction {
     BuiltinFunction {
         name: "date_diff".to_string(),
         arity: 3,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let date_str1 = require_string(&args[0])?;
             let date_str2 = require_string(&args[1])?;
             // Ignore unit for now
@@ -136,7 +137,7 @@ pub fn date_diff() -> BuiltinFunction {
             let seconds = duration.get_seconds() as f64;
             let days = seconds / 86400.0;
             Ok(Value::Number(days))
-        },
+        }),
     }
 }
 

@@ -148,25 +148,25 @@ fn register_custom_functions(registry: &mut FunctionRegistry) {
     registry.register(BuiltinFunction {
         name: "fibonacci".to_string(),
         arity: 1,
-        call: fibonacci,
+        call: std::sync::Arc::new(fibonacci),
     });
 
     registry.register(BuiltinFunction {
         name: "power".to_string(),
         arity: 2,
-        call: power,
+        call: std::sync::Arc::new(power),
     });
 
     registry.register(BuiltinFunction {
         name: "is_even".to_string(),
         arity: 1,
-        call: is_even,
+        call: std::sync::Arc::new(is_even),
     });
 
     registry.register(BuiltinFunction {
         name: "clamp".to_string(),
         arity: 3,
-        call: clamp,
+        call: std::sync::Arc::new(clamp),
     });
 }
 

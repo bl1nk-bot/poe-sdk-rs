@@ -1,31 +1,38 @@
-use crate::ast::{BinaryOp, Expr, SpannedExpr, UnaryOp};
+use crate::ast::{Expr, SpannedExpr};
 use crate::context::Context;
 use crate::error::{ErrorKind, FormulaError};
 use crate::functions::FunctionRegistry;
 use crate::span::Span;
 use crate::value::Value;
 
-/// ประเมินผล SpannedExpr แล้วคืน Value
+/// ประเมินผลนิพจน์ (SpannedExpr) และคืนค่าผลลัพธ์ (Value)
 pub fn evaluate(
     expr: &SpannedExpr,
     ctx: &Context,
     registry: &FunctionRegistry,
 ) -> Result<Value, FormulaError> {
+    evaluate_recursive(expr, ctx, registry, 0)
+}
+
+pub(crate) fn evaluate_recursive(
+    expr: &SpannedExpr,
+    ctx: &Context,
+    registry: &FunctionRegistry,
+    depth: usize,
+) -> Result<Value, FormulaError> {
+    if depth > 100 {
+        return Err(FormulaError::new(
+            ErrorKind::EvalError,
+            "E303",
+            "Recursion limit exceeded",
+            Some(expr.meta.span),
+        ));
+    }
     let span = expr.meta.span;
     match &expr.expr {
         Expr::Literal(val) => Ok(val.clone()),
         Expr::Variable(name) => {
             let parts: Vec<&str> = name.split('.').collect();
-            if parts.is_empty() {
-                return Err(FormulaError::new(
-                    ErrorKind::ContextError,
-                    "E601",
-                    &format!("ไม่พบตัวแปร '{}'", name),
-                    Some(span),
-                ));
-            }
-
-            // Look up the first part in the root context
             let mut current = ctx.get(parts[0]).cloned();
             if current.is_none() {
                 return Err(FormulaError::new(
@@ -35,8 +42,6 @@ pub fn evaluate(
                     Some(span),
                 ));
             }
-
-            // Traverse the remaining parts
             for i in 1..parts.len() {
                 let part = parts[i];
                 match &current {
@@ -51,33 +56,16 @@ pub fn evaluate(
                             ));
                         }
                     }
-                    Some(Value::Array(_)) => {
+                    _ => {
                         return Err(FormulaError::new(
                             ErrorKind::TypeError,
                             "E401",
-                            &format!("คาดหวังแผนที่ แต่ได้อาร์เรย์ที่ '{}'", parts[i - 1]),
+                            &format!("คาดหวังแผนที่ แต่ได้ชนิดอื่นที่ '{}'", parts[i - 1]),
                             Some(span),
-                        ));
-                    }
-                    Some(_) => {
-                        return Err(FormulaError::new(
-                            ErrorKind::TypeError,
-                            "E401",
-                            &format!("คาดหวังแผนที่ แต่ได้ค่าที่ไม่ใช่แผนที่ที่ '{}'", parts[i - 1]),
-                            Some(span),
-                        ));
-                    }
-                    None => {
-                        return Err(FormulaError::new(
-                            ErrorKind::ContextError,
-                            "E601",
-                            &format!("ไม่พบตัวแปร '{}'", part),
-                            Some(span),
-                        ));
+                        ))
                     }
                 }
             }
-
             current.ok_or_else(|| {
                 FormulaError::new(
                     ErrorKind::ContextError,
@@ -87,11 +75,11 @@ pub fn evaluate(
                 )
             })
         }
-        Expr::Grouping(inner) => evaluate(inner, ctx, registry),
+        Expr::Grouping(inner) => evaluate_recursive(inner, ctx, registry, depth + 1),
         Expr::UnaryExpr { op, expr } => {
-            let val = evaluate(expr, ctx, registry)?;
+            let val = evaluate_recursive(expr, ctx, registry, depth + 1)?;
             match op {
-                UnaryOp::Neg => {
+                crate::ast::UnaryOp::Neg => {
                     if let Value::Number(n) = val {
                         Ok(Value::Number(-n))
                     } else {
@@ -103,7 +91,7 @@ pub fn evaluate(
                         ))
                     }
                 }
-                UnaryOp::Not => {
+                crate::ast::UnaryOp::Not => {
                     if let Value::Bool(b) = val {
                         Ok(Value::Bool(!b))
                     } else {
@@ -118,39 +106,63 @@ pub fn evaluate(
             }
         }
         Expr::BinaryExpr { left, op, right } => {
-            let l = evaluate(left, ctx, registry)?;
-            let r = evaluate(right, ctx, registry)?;
+            let l = evaluate_recursive(left, ctx, registry, depth + 1)?;
+            let r = evaluate_recursive(right, ctx, registry, depth + 1)?;
             match op {
-                BinaryOp::Add => add_values(l, r, span),
-                BinaryOp::Sub => sub_values(l, r, span),
-                BinaryOp::Mul => mul_values(l, r, span),
-                BinaryOp::Div => div_values(l, r, span),
-                BinaryOp::Eq => Ok(Value::Bool(l == r)),
-                BinaryOp::NotEq => Ok(Value::Bool(l != r)),
-                BinaryOp::Lt => compare_values(l, r, span, |a, b| a < b),
-                BinaryOp::Gt => compare_values(l, r, span, |a, b| a > b),
-                BinaryOp::LtEq => compare_values(l, r, span, |a, b| a <= b),
-                BinaryOp::GtEq => compare_values(l, r, span, |a, b| a >= b),
-                BinaryOp::And => logic_and(l, r, span),
-                BinaryOp::Or => logic_or(l, r, span),
+                crate::ast::BinaryOp::Add => add_values(l, r, span),
+                crate::ast::BinaryOp::Sub => sub_values(l, r, span),
+                crate::ast::BinaryOp::Mul => mul_values(l, r, span),
+                crate::ast::BinaryOp::Div => div_values(l, r, span),
+                crate::ast::BinaryOp::Eq => Ok(Value::Bool(l == r)),
+                crate::ast::BinaryOp::NotEq => Ok(Value::Bool(l != r)),
+                crate::ast::BinaryOp::Lt => compare_values(l, r, span, |a, b| a < b),
+                crate::ast::BinaryOp::Gt => compare_values(l, r, span, |a, b| a > b),
+                crate::ast::BinaryOp::LtEq => compare_values(l, r, span, |a, b| a <= b),
+                crate::ast::BinaryOp::GtEq => compare_values(l, r, span, |a, b| a >= b),
+                crate::ast::BinaryOp::And => logic_and(l, r, span),
+                crate::ast::BinaryOp::Or => logic_or(l, r, span),
             }
         }
         Expr::ArrayLiteral(elements) => {
             let values: Result<Vec<Value>, _> = elements
                 .iter()
-                .map(|e| evaluate(e, ctx, registry))
+                .map(|e| evaluate_recursive(e, ctx, registry, depth + 1))
                 .collect();
             Ok(Value::Array(values?))
         }
         Expr::MapLiteral(pairs) => {
             let mut map = std::collections::HashMap::new();
             for (key, expr) in pairs {
-                let value = evaluate(expr, ctx, registry)?;
+                let value = evaluate_recursive(expr, ctx, registry, depth + 1)?;
                 map.insert(key.clone(), value);
             }
             Ok(Value::Map(map))
         }
         Expr::FunctionCall { name, args } => {
+            let evaluated_args: Vec<Value> = args
+                .iter()
+                .map(|a| evaluate_recursive(a, ctx, registry, depth + 1))
+                .collect::<Result<_, _>>()?;
+            if let Some((params, body)) = ctx.get_function(name) {
+                if params.len() != evaluated_args.len() {
+                    return Err(FormulaError::new(
+                        ErrorKind::FunctionError,
+                        "E503",
+                        &format!(
+                            "ฟังก์ชัน '{}' ต้องการ {} อาร์กิวเมนต์ แต่ได้ {}",
+                            name,
+                            params.len(),
+                            evaluated_args.len()
+                        ),
+                        Some(span),
+                    ));
+                }
+                let mut local_ctx = ctx.clone();
+                for (param, val) in params.iter().zip(evaluated_args) {
+                    local_ctx.set(param, val);
+                }
+                return evaluate_recursive(body, &local_ctx, registry, depth + 1);
+            }
             let func = registry.find(name).ok_or_else(|| {
                 FormulaError::new(
                     ErrorKind::FunctionError,
@@ -172,22 +184,26 @@ pub fn evaluate(
                     Some(span),
                 ));
             }
-            let evaluated_args: Vec<Value> = args
-                .iter()
-                .map(|a| evaluate(a, ctx, registry))
-                .collect::<Result<_, _>>()?;
-            // เรียกฟังก์ชันที่ implement ด้วย FormulaError โดยตรง
             (func.call)(&evaluated_args)
         }
+        Expr::LambdaExpr { params, body } => Ok(Value::Closure {
+            params: params.clone(),
+            body: body.clone(),
+            env: ctx.clone(),
+        }),
+        Expr::FunctionDef { .. } => Err(FormulaError::new(
+            ErrorKind::EvalError,
+            "E302",
+            "Function definition ไม่รองรับใน evaluate โดยตรง",
+            Some(span),
+        )),
     }
 }
 
-// ฟังก์ชันช่วยเหลือทางคณิตศาสตร์
 fn add_values(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
-    use Value::*;
     match (l, r) {
-        (Number(a), Number(b)) => Ok(Number(a + b)),
-        (String(a), String(b)) => Ok(String(format!("{}{}", a, b))),
+        (Value::Number(a), Value::Number(b)) => Ok(Value::Number(a + b)),
+        (Value::String(a), Value::String(b)) => Ok(Value::String(format!("{}{}", a, b))),
         _ => Err(FormulaError::new(
             ErrorKind::TypeError,
             "E401",
@@ -196,9 +212,8 @@ fn add_values(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
         )),
     }
 }
-
 fn sub_values(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
-    if let (Value::Number(a), Value::Number(b)) = (&l, &r) {
+    if let (Value::Number(a), Value::Number(b)) = (l, r) {
         Ok(Value::Number(a - b))
     } else {
         Err(FormulaError::new(
@@ -209,9 +224,8 @@ fn sub_values(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
         ))
     }
 }
-
 fn mul_values(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
-    if let (Value::Number(a), Value::Number(b)) = (&l, &r) {
+    if let (Value::Number(a), Value::Number(b)) = (l, r) {
         Ok(Value::Number(a * b))
     } else {
         Err(FormulaError::new(
@@ -222,10 +236,9 @@ fn mul_values(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
         ))
     }
 }
-
 fn div_values(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
-    if let (Value::Number(a), Value::Number(b)) = (&l, &r) {
-        if *b == 0.0 {
+    if let (Value::Number(a), Value::Number(b)) = (l, r) {
+        if b == 0.0 {
             Err(FormulaError::new(
                 ErrorKind::EvalError,
                 "E301",
@@ -244,13 +257,12 @@ fn div_values(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
         ))
     }
 }
-
 fn compare_values<F>(l: Value, r: Value, span: Span, f: F) -> Result<Value, FormulaError>
 where
     F: Fn(f64, f64) -> bool,
 {
-    if let (Value::Number(a), Value::Number(b)) = (&l, &r) {
-        Ok(Value::Bool(f(*a, *b)))
+    if let (Value::Number(a), Value::Number(b)) = (l, r) {
+        Ok(Value::Bool(f(a, b)))
     } else {
         Err(FormulaError::new(
             ErrorKind::TypeError,
@@ -260,10 +272,9 @@ where
         ))
     }
 }
-
 fn logic_and(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
-    if let (Value::Bool(a), Value::Bool(b)) = (&l, &r) {
-        Ok(Value::Bool(*a && *b))
+    if let (Value::Bool(a), Value::Bool(b)) = (l, r) {
+        Ok(Value::Bool(a && b))
     } else {
         Err(FormulaError::new(
             ErrorKind::TypeError,
@@ -273,10 +284,9 @@ fn logic_and(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
         ))
     }
 }
-
 fn logic_or(l: Value, r: Value, span: Span) -> Result<Value, FormulaError> {
-    if let (Value::Bool(a), Value::Bool(b)) = (&l, &r) {
-        Ok(Value::Bool(*a || *b))
+    if let (Value::Bool(a), Value::Bool(b)) = (l, r) {
+        Ok(Value::Bool(a || b))
     } else {
         Err(FormulaError::new(
             ErrorKind::TypeError,

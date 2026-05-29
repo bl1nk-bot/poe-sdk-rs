@@ -1,39 +1,40 @@
-//! ฟังก์ชันเกี่ยวกับ array (Phase 6.1)
+//! ฟังก์ชันเกี่ยวกับอาร์เรย์ (Phase 6.1)
 
 use crate::error::{ErrorKind, FormulaError};
 use crate::functions::BuiltinFunction;
 use crate::value::Value;
+use std::sync::Arc;
 
 /// sum(array) -> Number
-/// หาผลรวมของตัวเลขใน array
+/// หาผลรวมของตัวเลขในอาร์เรย์
 pub fn sum() -> BuiltinFunction {
     BuiltinFunction {
         name: "sum".to_string(),
         arity: 1,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let arr = require_array(&args[0])?;
             let total: f64 = arr
                 .iter()
                 .map(require_number)
                 .sum::<Result<f64, FormulaError>>()?;
             Ok(Value::Number(total))
-        },
+        }),
     }
 }
 
 /// avg(array) -> Number
-/// หาค่าเฉลี่ยของตัวเลขใน array
+/// หาค่าเฉลี่ยของตัวเลขในอาร์เรย์
 pub fn avg() -> BuiltinFunction {
     BuiltinFunction {
         name: "avg".to_string(),
         arity: 1,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let arr = require_array(&args[0])?;
             if arr.is_empty() {
                 return Err(FormulaError::new(
                     ErrorKind::FunctionError,
                     "E504",
-                    "avg ไม่สามารถใช้กับ array ว่าง",
+                    "avg ไม่สามารถใช้กับอาร์เรย์ว่าง",
                     None,
                 ));
             }
@@ -42,23 +43,23 @@ pub fn avg() -> BuiltinFunction {
                 .map(require_number)
                 .sum::<Result<f64, FormulaError>>()?;
             Ok(Value::Number(total / arr.len() as f64))
-        },
+        }),
     }
 }
 
 /// min(array) -> Number
-/// คืนค่าต่ำสุดใน array
+/// คืนค่าต่ำสุดในอาร์เรย์
 pub fn min_arr() -> BuiltinFunction {
     BuiltinFunction {
         name: "min".to_string(),
         arity: 1,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let arr = require_array(&args[0])?;
             if arr.is_empty() {
                 return Err(FormulaError::new(
                     ErrorKind::FunctionError,
                     "E504",
-                    "min ไม่สามารถใช้กับ array ว่าง",
+                    "min ไม่สามารถใช้กับอาร์เรย์ว่าง",
                     None,
                 ));
             }
@@ -77,23 +78,23 @@ pub fn min_arr() -> BuiltinFunction {
                 });
             }
             Ok(Value::Number(min_val.unwrap()))
-        },
+        }),
     }
 }
 
 /// max(array) -> Number
-/// คืนค่าสูงสุดใน array
+/// คืนค่าสูงสุดในอาร์เรย์
 pub fn max_arr() -> BuiltinFunction {
     BuiltinFunction {
         name: "max".to_string(),
         arity: 1,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let arr = require_array(&args[0])?;
             if arr.is_empty() {
                 return Err(FormulaError::new(
                     ErrorKind::FunctionError,
                     "E504",
-                    "max ไม่สามารถใช้กับ array ว่าง",
+                    "max ไม่สามารถใช้กับอาร์เรย์ว่าง",
                     None,
                 ));
             }
@@ -112,35 +113,35 @@ pub fn max_arr() -> BuiltinFunction {
                 });
             }
             Ok(Value::Number(max_val.unwrap()))
-        },
+        }),
     }
 }
 
 /// join(array, separator) -> String
-/// ต่อสมาชิก array ที่เป็น string ด้วยตัวคั่น
+/// ต่อสมาชิกอาร์เรย์ที่เป็นข้อความด้วยตัวคั่น
 pub fn join() -> BuiltinFunction {
     BuiltinFunction {
         name: "join".to_string(),
         arity: 2,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let arr = require_array(&args[0])?;
             let sep = require_string(&args[1])?;
             let parts: Result<Vec<String>, FormulaError> = arr.iter().map(require_string).collect();
             Ok(Value::String(parts?.join(&sep)))
-        },
+        }),
     }
 }
 
 /// count(array) -> Number
-/// นับจำนวนสมาชิกใน array (เหมือน len)
+/// นับจำนวนสมาชิกในอาร์เรย์
 pub fn count() -> BuiltinFunction {
     BuiltinFunction {
         name: "count".to_string(),
         arity: 1,
-        call: |args| {
+        call: Arc::new(|args: &[Value]| {
             let arr = require_array(&args[0])?;
             Ok(Value::Number(arr.len() as f64))
-        },
+        }),
     }
 }
 
@@ -152,7 +153,7 @@ fn require_array(value: &Value) -> Result<&Vec<Value>, FormulaError> {
         _ => Err(FormulaError::new(
             ErrorKind::FunctionError,
             "E501",
-            "ต้องการ array",
+            "ต้องการอาร์เรย์",
             None,
         )),
     }
@@ -189,8 +190,6 @@ mod tests {
     fn call_fn(f: BuiltinFunction, args: Vec<Value>) -> Result<Value, FormulaError> {
         (f.call)(&args)
     }
-
-    // -- sum() tests --
 
     #[test]
     fn test_sum_basic() {
@@ -266,8 +265,6 @@ mod tests {
         assert_eq!(result, Value::Number(0.0));
     }
 
-    // -- avg() tests --
-
     #[test]
     fn test_avg_basic() {
         let result = call_fn(
@@ -315,8 +312,6 @@ mod tests {
         let err = result.unwrap_err();
         assert_eq!(err.code, "E501");
     }
-
-    // -- min_arr() tests --
 
     #[test]
     fn test_min_basic() {
@@ -397,8 +392,6 @@ mod tests {
         assert_eq!(err.code, "E501");
     }
 
-    // -- max_arr() tests --
-
     #[test]
     fn test_max_basic() {
         let result = call_fn(
@@ -470,8 +463,6 @@ mod tests {
         let err = result.unwrap_err();
         assert_eq!(err.code, "E501");
     }
-
-    // -- join() tests --
 
     #[test]
     fn test_join_basic() {
@@ -571,8 +562,6 @@ mod tests {
         assert_eq!(err.code, "E501");
     }
 
-    // -- count() tests --
-
     #[test]
     fn test_count_basic() {
         let result = call_fn(
@@ -595,7 +584,6 @@ mod tests {
 
     #[test]
     fn test_count_mixed_types() {
-        // count does not validate element types, just counts
         let result = call_fn(
             count(),
             vec![Value::Array(vec![
